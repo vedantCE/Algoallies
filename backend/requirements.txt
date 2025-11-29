@@ -3,8 +3,10 @@ uvicorn
 pymongo
 python-dotenv
 requests
-pydantic
-langchain
-langchain-community
-langchain-google-genai
 google-ai-generativelanguage==0.4.0
+langchain==0.1.16
+langchain-core==0.1.53
+langchain-community==0.0.29
+langchain-google-genai==0.3.0
+pydantic==1.10.13
+google-generativeai==0.3.2
