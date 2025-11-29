@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sendCitizenMessage } from "@/lib/api";
 
 const mockResponses = [
   "I'm here to help with your health questions. What would you like to know?",
@@ -25,7 +26,7 @@ export const FloatingChatbot = () => {
   ]);
   const [input, setInput] = useState("");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -35,17 +36,31 @@ export const FloatingChatbot = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = input;
     setInput("");
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      console.log("Request sent to backend");
+      console.log("Payload:", { message: userInput });
+      
+      const response = await sendCitizenMessage(userInput);
+      console.log("Backend returned:", response.data);
+
       const aiResponse: Message = {
         id: messages.length + 2,
-        text: mockResponses[Math.floor(Math.random() * mockResponses.length)],
+        text: response.data.success ? response.data.response : "Sorry, I'm having trouble right now. Please try again.",
         isUser: false,
       };
       setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorResponse: Message = {
+        id: messages.length + 2,
+        text: "I'm having connection issues. Please try again later.",
+        isUser: false,
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    }
   };
 
   return (

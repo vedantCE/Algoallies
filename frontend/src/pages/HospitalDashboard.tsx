@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { sendHospitalMessage } from "@/lib/api";
 import {
   Users,
   Bed,
@@ -52,33 +53,21 @@ const hospitalStats = [
   },
 ];
 
-const weatherRecommendations = [
-  {
-    icon: CloudRain,
-    title: "Respiratory Alert",
-    description: "Expected increase in asthma and respiratory cases due to high humidity. Ensure adequate nebulizer supplies.",
-    priority: "high",
-  },
-  {
-    icon: Thermometer,
-    title: "Heat Advisory",
-    description: "High temperatures expected. Prepare for heat stroke cases and ensure hydration supplies are stocked.",
-    priority: "medium",
-  },
-  {
-    icon: Wind,
-    title: "Air Quality",
-    description: "Moderate air quality index. Consider recommending indoor activities for patients with respiratory conditions.",
-    priority: "low",
-  },
-];
+const getIconForType = (iconType: string) => {
+  switch (iconType) {
+    case "respiratory": return CloudRain;
+    case "heat": return Thermometer;
+    case "air_quality": return Wind;
+    default: return Activity;
+  }
+};
 
 const staffSchedule = [
-  { name: "Dr. Emily Carter", role: "Chief Physician", shift: "Day", status: "on-duty" },
-  { name: "Dr. James Wilson", role: "Surgeon", shift: "Day", status: "on-duty" },
-  { name: "Nurse Sarah Miller", role: "Head Nurse", shift: "Day", status: "on-duty" },
-  { name: "Dr. Michael Brown", role: "Cardiologist", shift: "Night", status: "off-duty" },
-  { name: "Nurse John Davis", role: "ICU Nurse", shift: "Night", status: "off-duty" },
+  { name: "Dr. Pooja Linagayat", role: "Chief Physician", shift: "Day", status: "on-duty" },
+  { name: "Dr. Khushi Bhatt", role: "Surgeon", shift: "Day", status: "on-duty" },
+  { name: "Nurse Niru Patel", role: "Head Nurse", shift: "Day", status: "on-duty" },
+  { name: "Dr. Hriday Desai", role: "Cardiologist", shift: "Night", status: "off-duty" },
+  { name: "Nurse  Lalita", role: "ICU Nurse", shift: "Night", status: "off-duty" },
 ];
 
 const inventoryItems = [
@@ -99,6 +88,50 @@ const medicineInventory = [
 
 export const HospitalDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [hospitalData, setHospitalData] = useState<any>(null);
+  const [weatherRecommendations, setWeatherRecommendations] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchHospitalData = async () => {
+      try {
+        console.log("Request sent to backend");
+        console.log("Payload:", { query: "Get live weather-based hospital recommendations" });
+        
+        const response = await sendHospitalMessage("Get live weather-based hospital recommendations");
+        console.log("Backend returned:", response.data);
+        
+        if (response.data.success && response.data.response) {
+          try {
+            const parsedData = JSON.parse(response.data.response);
+            setHospitalData(parsedData);
+            setWeatherRecommendations(parsedData.recommendations || []);
+          } catch (parseError) {
+            console.error("Failed to parse hospital data:", parseError);
+            setWeatherRecommendations([
+              {
+                title: "Weather Data Loading",
+                description: "Fetching live weather recommendations...",
+                priority: "medium",
+                icon_type: "air_quality"
+              }
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch hospital data:", error);
+        setWeatherRecommendations([
+          {
+            title: "Connection Error",
+            description: "Unable to fetch live weather data. Using default recommendations.",
+            priority: "low",
+            icon_type: "air_quality"
+          }
+        ]);
+      }
+    };
+
+    fetchHospitalData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,42 +181,45 @@ export const HospitalDashboard = () => {
                 AI Weather-Based Recommendations
               </h3>
               <p className="text-sm text-muted-foreground">
-                Predictive insights based on current weather conditions
+                📍 Mumbai - Live weather & AQI insights
               </p>
             </div>
           </div>
           
           <div className="grid md:grid-cols-3 gap-4">
-            {weatherRecommendations.map((rec, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-                className={`p-4 rounded-xl border ${
-                  rec.priority === "high"
-                    ? "bg-red-50 border-red-200"
-                    : rec.priority === "medium"
-                    ? "bg-yellow-50 border-yellow-200"
-                    : "bg-healthcare-light-blue border-blue-200"
-                }`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <rec.icon
-                    className={`${
-                      rec.priority === "high"
-                        ? "text-red-500"
-                        : rec.priority === "medium"
-                        ? "text-yellow-600"
-                        : "text-healthcare-blue"
-                    }`}
-                    size={24}
-                  />
-                  <h4 className="font-semibold text-foreground">{rec.title}</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">{rec.description}</p>
-              </motion.div>
-            ))}
+            {weatherRecommendations.map((rec, index) => {
+              const IconComponent = getIconForType(rec.icon_type);
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                  className={`p-4 rounded-xl border ${
+                    rec.priority === "high"
+                      ? "bg-red-50 border-red-200"
+                      : rec.priority === "medium"
+                      ? "bg-yellow-50 border-yellow-200"
+                      : "bg-healthcare-light-blue border-blue-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <IconComponent
+                      className={`${
+                        rec.priority === "high"
+                          ? "text-red-500"
+                          : rec.priority === "medium"
+                          ? "text-yellow-600"
+                          : "text-healthcare-blue"
+                      }`}
+                      size={24}
+                    />
+                    <h4 className="font-semibold text-foreground">{rec.title}</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{rec.description}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 

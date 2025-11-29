@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { login } from "@/lib/api";
 
 const demoAccounts = [
   {
@@ -42,34 +43,36 @@ export const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      console.log("Request sent to backend");
+      console.log("Payload:", { email, password });
+      
+      const response = await login(email, password);
+      console.log("Backend returned:", response.data);
 
-    const citizenAccount = demoAccounts.find((a) => a.type === "citizen");
-    const hospitalAccount = demoAccounts.find((a) => a.type === "hospital");
-
-    if (
-      email === citizenAccount?.email &&
-      password === citizenAccount?.password
-    ) {
+      if (response.data.success) {
+        toast({
+          title: "Welcome back!",
+          description: "Redirecting to your dashboard...",
+        });
+        
+        if (response.data.role === "citizen") {
+          navigate("/citizen");
+        } else if (response.data.role === "hospital") {
+          navigate("/hospital");
+        }
+      } else {
+        toast({
+          title: "Login failed",
+          description: response.data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
-        title: "Welcome back!",
-        description: "Redirecting to your dashboard...",
-      });
-      navigate("/citizen");
-    } else if (
-      email === hospitalAccount?.email &&
-      password === hospitalAccount?.password
-    ) {
-      toast({
-        title: "Welcome back!",
-        description: "Redirecting to hospital dashboard...",
-      });
-      navigate("/hospital");
-    } else {
-      toast({
-        title: "Invalid credentials",
-        description: "Please check your email and password.",
+        title: "Connection error",
+        description: "Unable to connect to server. Please try again.",
         variant: "destructive",
       });
     }

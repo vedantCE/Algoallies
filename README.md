@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# HealthSphere AI - Full Stack Integration
 
-## Project info
+## 🚀 Quick Start
 
-**URL**: https://lovable.dev/projects/c0bb6077-c0c8-4d5e-875b-70829f45ab67
+### Option 1: Automated Setup
+```bash
+./start_servers.sh
+```
 
-## How can I edit this code?
+### Option 2: Manual Setup
 
-There are several ways of editing your application.
+#### Backend Setup
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app:app --reload
+```
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c0bb6077-c0c8-4d5e-875b-70829f45ab67) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+#### Frontend Setup
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🔗 Server URLs
+- **Backend API**: http://127.0.0.1:8000
+- **Frontend**: http://localhost:5173
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔑 Demo Accounts
 
-**Use GitHub Codespaces**
+### Citizen Account
+- **Email**: `citizen@test.com`
+- **Password**: `1234`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Hospital Account
+- **Email**: `hospital@test.com`
+- **Password**: `9999`
 
-## What technologies are used for this project?
+## 📡 API Endpoints
 
-This project is built with:
+### Authentication
+- `POST /login` - User login
+- `POST /signup` - User registration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### AI Agents
+- `POST /citizen-response` - Citizen health assistant
+- `POST /hospital-response` - Hospital operations assistant
+- `POST /landing-response` - Landing page wellness tips
 
-## How can I deploy this project?
+### Health Data
+- `GET /health-advisory` - Daily health recommendations
 
-Simply open [Lovable](https://lovable.dev/projects/c0bb6077-c0c8-4d5e-875b-70829f45ab67) and click on Share -> Publish.
+## 🛠 Tech Stack
 
-## Can I connect a custom domain to my Lovable project?
+### Backend
+- **FastAPI** - Modern Python web framework
+- **LangChain** - AI agent framework
+- **Google Gemini** - AI model
+- **MongoDB** - Database
+- **CORS** - Cross-origin resource sharing
 
-Yes, you can!
+### Frontend
+- **React** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Axios** - HTTP client
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animations
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🔧 Configuration
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Environment Variables (.env)
+```
+GEMINI_API_KEY=your_gemini_api_key
+MONGO_URI=your_mongodb_connection_string
+```
+
+### CORS Settings
+The backend is configured to accept requests from:
+- `http://localhost:5173`
+- `http://127.0.0.1:5173`
+
+## 📝 API Usage Examples
+
+### Login
+```javascript
+const response = await api.post('/login', {
+  email: 'citizen@test.com',
+  password: '1234'
+});
+```
+
+### Send Citizen Message
+```javascript
+const response = await api.post('/citizen-response', {
+  message: 'I have a headache, what should I do?'
+});
+```
+
+### Get Health Advisory
+```javascript
+const response = await api.get('/health-advisory');
+```
+
+## 🐛 Troubleshooting
+
+### Backend Issues
+- Ensure Python dependencies are installed: `pip install -r requirements.txt`
+- Check if port 8000 is available
+- Verify environment variables are set
+
+### Frontend Issues
+- Install dependencies: `npm install`
+- Check if port 5173 is available
+- Ensure axios is installed
+
+### CORS Issues
+- Backend CORS is configured for localhost:5173
+- Check browser console for CORS errors
+
+## 📊 Console Logging
+
+Both frontend and backend include extensive console logging:
+
+### Backend Logs
+- Route hits: `"API route hit: route_name"`
+- Request data: `"Request data: {...}"`
+- Response data: `"Generated response: {...}"`
+
+### Frontend Logs
+- API requests: `"Request sent to backend"`
+- Payloads: `"Payload: {...}"`
+- Responses: `"Backend returned: {...}"`

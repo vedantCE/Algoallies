@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getLandingAI } from "@/lib/api";
 import {
   Stethoscope,
   Heart,
@@ -62,6 +64,23 @@ const features = [
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const [landingMessage, setLandingMessage] = useState<string>("");
+
+  useEffect(() => {
+    const fetchLandingMessage = async () => {
+      try {
+        console.log("Request sent to backend");
+        const response = await getLandingAI();
+        console.log("Backend returned:", response.data);
+        setLandingMessage(response.data.response);
+      } catch (error) {
+        console.error("Failed to fetch landing message:", error);
+        setLandingMessage("Welcome to HealthAI - Your intelligent healthcare companion!");
+      }
+    };
+
+    fetchLandingMessage();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">

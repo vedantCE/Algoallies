@@ -1,24 +1,86 @@
+# --------------------------
+# Python / FastAPI backend
+# --------------------------
+
+# Virtual environment
+backend/venv/
+venv/
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.pytest_cache/
+*.mypy_cache/
+
 # Logs
-logs
 *.log
+
+# Compiled
+*.so
+*.dll
+*.dylib
+
+# Database dumps
+*.sqlite3
+*.db
+
+# --------------------------
+# Node / React / Vite frontend
+# --------------------------
+
+# Node modules
+frontend/node_modules/
+node_modules/
+
+# Build output
+dist/
+build/
+frontend/dist/
+frontend/build/
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Local environment
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Vite
+frontend/.vite/
+
+# MacOS system files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.DS_Store
+
+# --------------------------
+# Editor / IDE
+# --------------------------
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+
+# --------------------------
+# Misc
+# --------------------------
+
+# Backups
+*.bak
+*.tmp
+*.temp
+
+# Python profiling
+profile/
