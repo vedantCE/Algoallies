@@ -73,13 +73,13 @@ const quickActions = [
 
 const upcomingAppointments = [
   {
-    doctor: "Dr. Sarah Johnson",
+    doctor: "Dr. Khushi Bhatt",
     specialty: "General Physician",
     date: "Dec 15, 2024",
     time: "10:00 AM",
   },
   {
-    doctor: "Dr. Michael Chen",
+    doctor: "Dr. Pooja Lingayat",
     specialty: "Cardiologist",
     date: "Dec 20, 2024",
     time: "2:30 PM",
@@ -133,7 +133,7 @@ export const CitizenDashboard = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Good morning, <span className="healthcare-gradient-text">John</span>! 👋
+            Good morning, <span className="healthcare-gradient-text">Hriday</span>! 👋
           </h1>
           <p className="text-muted-foreground">
             Here's your health overview for today
