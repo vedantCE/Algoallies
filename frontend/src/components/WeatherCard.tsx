@@ -84,7 +84,7 @@ export const WeatherCard = () => {
           </div>
           <div className="flex items-center gap-2">
             <Droplets className="text-healthcare-blue" size={18} />
-            <span className="text-sm text-muted-foreground">{weather.humidity}%</span>
+            <span className="text-sm text-muted-foreground">{weather.humidity}%</span>  
           </div>
           <div className="flex items-center gap-2">
             <Wind className="text-muted-foreground" size={18} />
