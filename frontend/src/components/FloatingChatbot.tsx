@@ -40,23 +40,46 @@ export const FloatingChatbot = () => {
     setInput("");
 
     try {
-      console.log("Request sent to backend");
-      console.log("Payload:", { message: userInput });
+      console.log("FloatingChatbot: sending message to /citizen-response");
+      console.log("FloatingChatbot: Payload:", { message: userInput });
       
       const response = await sendCitizenMessage(userInput);
-      console.log("Backend returned:", response.data);
+      console.log("FloatingChatbot: Full response:", response);
+      console.log("FloatingChatbot: Response data:", response.data);
+      
+      let aiText = "Sorry, I'm having trouble right now. Please try again.";
+      
+      if (response.data) {
+        if (response.data.success && response.data.response) {
+          aiText = response.data.response;
+          console.log("FloatingChatbot: Response length:", aiText.length, "characters");
+        } else if (response.data.message) {
+          aiText = response.data.message;
+        } else if (response.data.error) {
+          aiText = `Error: ${response.data.error}`;
+        }
+      }
 
       const aiResponse: Message = {
         id: messages.length + 2,
-        text: response.data.success ? response.data.response : "Sorry, I'm having trouble right now. Please try again.",
+        text: aiText,
         isUser: false,
       };
       setMessages((prev) => [...prev, aiResponse]);
-    } catch (error) {
-      console.error("Chat error:", error);
+    } catch (error: any) {
+      console.error("FloatingChatbot: Error caught:", error);
+      console.error("FloatingChatbot: Error details:", error.response?.data || error.message);
+      
+      let errorText = "I'm having connection issues. Please try again later.";
+      if (error.response?.data?.error) {
+        errorText = `Error: ${error.response.data.error}`;
+      } else if (error.response?.data?.message) {
+        errorText = error.response.data.message;
+      }
+      
       const errorResponse: Message = {
         id: messages.length + 2,
-        text: "I'm having connection issues. Please try again later.",
+        text: errorText,
         isUser: false,
       };
       setMessages((prev) => [...prev, errorResponse]);
@@ -99,7 +122,7 @@ export const FloatingChatbot = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] h-[500px] glass-card overflow-hidden flex flex-col"
+            className="fixed bottom-6 right-6 z-50 w-[90vw] max-w-[380px] h-[500px] glass-card overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="healthcare-gradient p-4 flex items-center justify-between">
@@ -138,7 +161,13 @@ export const FloatingChatbot = () => {
                         : "bg-muted text-foreground rounded-bl-sm"
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <div className="text-sm whitespace-pre-wrap">
+                      {message.text.split('\n').map((line, i) => (
+                        <p key={i} className={line.startsWith('##') ? 'font-bold mt-3 mb-1' : line.startsWith('•') || line.startsWith('-') ? 'ml-2' : ''}>
+                          {line.replace(/^##\s*/, '').replace(/^\*\*(.+?)\*\*/, '$1')}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               ))}
