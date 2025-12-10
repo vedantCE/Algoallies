@@ -16,7 +16,7 @@ def find_nearby_clinics(lat: float, lon: float):
     
     # Create search bounding box around user location (approximately 5km radius)
     # Viewbox format: left,top,right,bottom (longitude,latitude,longitude,latitude)
-    bbox_size = 0.05  # Roughly 5km in degrees
+    bbox_size = 0.02  # Roughly 2km in degrees
     viewbox = f"{lon-bbox_size},{lat+bbox_size},{lon+bbox_size},{lat-bbox_size}"
     
     # Nominatim API URL for searching healthcare facilities
