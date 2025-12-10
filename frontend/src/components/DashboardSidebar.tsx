@@ -6,7 +6,7 @@ import {
   Calendar,
   MessageSquare,
   MapPin,
-  Bell,
+  Bell,                                                                                                      
   Settings,
   Users,
   FileText,
