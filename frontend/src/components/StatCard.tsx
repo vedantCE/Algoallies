@@ -55,3 +55,4 @@ export const StatCard = ({ title, value, subtitle, icon: Icon, trend, delay = 0 
     </motion.div>
   );
 };
+  
