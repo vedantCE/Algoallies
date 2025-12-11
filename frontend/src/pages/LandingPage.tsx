@@ -83,7 +83,7 @@ export const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden w-full">
       {/* Floating Background Icons */}
       {floatingIcons.map(({ Icon, x, y, delay }, index) => (
         <motion.div
@@ -112,7 +112,7 @@ export const LandingPage = () => {
       ))}
 
       {/* Header */}
-      <header className="relative z-10 px-6 py-4">
+      <header className="relative z-10 px-4 sm:px-6 py-4 w-full">
         <nav className="max-w-7xl mx-auto flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -141,7 +141,7 @@ export const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative z-10 px-6 pt-20 pb-32">
+      <section className="relative z-10 px-4 sm:px-6 pt-20 pb-32 w-full">
         <div className="max-w-7xl mx-auto">
           <motion.div
             variants={staggerContainer}
@@ -229,7 +229,7 @@ export const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 px-6 py-24 bg-muted/50">
+      <section className="relative z-10 px-4 sm:px-6 py-24 bg-muted/50 w-full">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -269,7 +269,7 @@ export const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="relative z-10 px-6 py-24">
+      <section className="relative z-10 px-4 sm:px-6 py-24 w-full">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -308,7 +308,7 @@ export const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-12 border-t border-border">
+      <footer className="relative z-10 px-4 sm:px-6 py-12 border-t border-border w-full">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 healthcare-gradient rounded-lg flex items-center justify-center">
@@ -317,7 +317,7 @@ export const LandingPage = () => {
             <span className="font-bold healthcare-gradient-text">HealthAI</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 HealthAI. All rights reserved.
+            © 2025 HealthAI. All rights reserved.
           </p>
         </div>
       </footer>
