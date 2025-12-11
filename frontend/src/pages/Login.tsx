@@ -34,65 +34,58 @@ const demoAccounts = [
 export const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [weight, setWeight] = useState("");
+  const [gender, setGender] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      console.log("Request sent to backend");
-      console.log("Payload:", { email, password });
-      
-      const response = await login(email, password);
-      console.log("Backend returned:", response.data);
-
-      if (response.data.success) {
-        toast({
-          title: "Welcome back!",
-          description: "Redirecting to your dashboard...",
-        });
+      if (isSignup) {
+        const { signup } = await import("@/lib/api");
+        const response = await signup({ name, email, password, role: "citizen" });
         
-        if (response.data.role === "citizen") {
-          navigate("/citizen");
-        } else if (response.data.role === "hospital") {
-          navigate("/hospital");
+        if (response.data.success) {
+          toast({ title: "Account created!", description: "Please sign in." });
+          setIsSignup(false);
+          setName(""); setAge(""); setWeight(""); setGender("");
+        } else {
+          toast({ title: "Signup failed", description: response.data.message, variant: "destructive" });
         }
       } else {
-        toast({
-          title: "Login failed",
-          description: response.data.message,
-          variant: "destructive",
-        });
+        const response = await login(email, password);
+        
+        if (response.data.success) {
+          toast({ title: "Welcome back!", description: "Redirecting..." });
+          navigate(response.data.role === "citizen" ? "/citizen" : "/hospital");
+        } else {
+          toast({ title: "Login failed", description: response.data.message, variant: "destructive" });
+        }
       }
     } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Connection error",
-        description: "Unable to connect to server. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Unable to connect to server.", variant: "destructive" });
     }
 
     setIsLoading(false);
   };
 
-  const handleDemoLogin = (account: (typeof demoAccounts)[0]) => {
-    setEmail(account.email);
-    setPassword(account.password);
-  };
-
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-x-hidden w-full">
+
       {/* Left Panel - Branding */}
       <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="hidden lg:flex lg:w-1/2 healthcare-gradient relative overflow-hidden"
+        className="hidden lg:flex lg:w-1/2 healthcare-gradient relative overflow-hidden max-w-[50vw]"
       >
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -180,53 +173,41 @@ export const Login = () => {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Sign In</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">{isSignup ? "Create Account" : "Sign In"}</h2>
             <p className="text-muted-foreground">
-              Access your healthcare dashboard
+              {isSignup ? "Join HealthAI today" : "Access your healthcare dashboard"}
             </p>
           </div>
 
-          {/* Demo Accounts */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            {demoAccounts.map((account) => (
-              <motion.button
-                key={account.type}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleDemoLogin(account)}
-                className={`glass-card p-4 text-left transition-all hover:shadow-lg ${account.bgColor}/20`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl ${account.bgColor} flex items-center justify-center mb-3`}
-                >
-                  <account.icon className={account.color} size={20} />
+          {/* Login/Signup Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {isSignup && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" required />
                 </div>
-                <p className="font-semibold text-foreground text-sm">
-                  {account.title}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {account.email}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Pass: {account.password}
-                </p>
-              </motion.button>
-            ))}
-          </div>
-
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-background text-muted-foreground">
-                or sign in manually
-              </span>
-            </div>
-          </div>
-
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Age" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input id="weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Weight" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <select id="gender" value={gender} onChange={(e) => setGender(e.target.value)} className="w-full px-3 py-2 border rounded-md">
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -272,27 +253,17 @@ export const Login = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full healthcare-gradient text-primary-foreground py-6"
-            >
+            <Button type="submit" disabled={isLoading} className="w-full healthcare-gradient text-primary-foreground py-6">
               {isLoading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
-                />
-              ) : (
-                "Sign In"
-              )}
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
+              ) : isSignup ? "Create Account" : "Sign In"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{" "}
-            <button className="text-primary hover:underline font-medium">
-              Sign up
+            {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button type="button" onClick={() => setIsSignup(!isSignup)} className="text-primary hover:underline font-medium">
+              {isSignup ? "Sign in" : "Sign up"}
             </button>
           </p>
         </motion.div>
