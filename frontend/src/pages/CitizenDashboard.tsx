@@ -1,13 +1,28 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Heart, Activity, Moon, Footprints, Hospital, Phone, Lightbulb, Calendar, Plus, MapPin, X } from "lucide-react";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { 
+  Heart, Activity, Moon, Footprints, Hospital, Phone, Lightbulb, 
+  Calendar, Plus, MapPin, X, Settings, Bell, MessageSquare, Home,
+  LogOut, Cloud, Droplets, Wind, Sun, Thermometer
+} from "lucide-react";
 import { FloatingChatbot } from "@/components/FloatingChatbot";
-import { WeatherCard } from "@/components/WeatherCard";
 import { StatCard } from "@/components/StatCard";
+import { AIConsultation } from "@/components/AIConsultation";
+import { HospitalFinderSimple } from "@/components/HospitalFinderSimple";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getHealthAdvisory, getNearbyHospitals } from "@/lib/api";
+import { getHealthAdvisory, getWeather } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+
+type SectionType = "health" | "appointments" | "hospitals" | "ai" | "notifications" | "settings";
+
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  description: string;
+  windSpeed: number;
+  city: string;
+}
 
 const healthMetrics = [
   {
@@ -40,37 +55,6 @@ const healthMetrics = [
   },
 ];
 
-const quickActions = [
-  {
-    icon: Hospital,
-    title: "Find Hospitals",
-    description: "Locate nearby healthcare facilities",
-    color: "bg-healthcare-light-blue",
-    iconColor: "text-healthcare-blue",
-  },
-  {
-    icon: Phone,
-    title: "Emergency",
-    description: "Quick access to emergency services",
-    color: "bg-red-100",
-    iconColor: "text-red-500",
-  },
-  {
-    icon: Lightbulb,
-    title: "Health Tips",
-    description: "Daily wellness recommendations",
-    color: "bg-healthcare-light-green",
-    iconColor: "text-healthcare-green",
-  },
-  {
-    icon: Calendar,
-    title: "Appointments",
-    description: "Schedule your next visit",
-    color: "bg-purple-100",
-    iconColor: "text-purple-500",
-  },
-];
-
 const upcomingAppointments = [
   {
     doctor: "Dr. Khushi Bhatt",
@@ -87,17 +71,78 @@ const upcomingAppointments = [
 ];
 
 export const CitizenDashboard = () => {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<SectionType>("health");
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherError, setWeatherError] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [healthAdvisory, setHealthAdvisory] = useState<any>(null);
-  const [showHospitals, setShowHospitals] = useState(false);
-  const [showHealthTips, setShowHealthTips] = useState(false);
-  const [hospitals, setHospitals] = useState<any[]>([]);
 
+  // Get user geolocation
+  useEffect(() => {
+    console.log("CitizenDashboard mounted");
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          };
+          console.log("User coordinates:", coords);
+          setUserCoords(coords);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          // Fallback to Mumbai coordinates
+          const fallback = { lat: 19.0760, lon: 72.8777 };
+          console.log("Using fallback coordinates:", fallback);
+          setUserCoords(fallback);
+        }
+      );
+    } else {
+      // Fallback if geolocation not supported
+      const fallback = { lat: 19.0760, lon: 72.8777 };
+      console.log("Geolocation not supported, using fallback:", fallback);
+      setUserCoords(fallback);
+    }
+  }, []);
+
+  // Fetch weather when coordinates are available
+  useEffect(() => {
+    if (!userCoords) return;
+
+    const fetchWeather = async () => {
+      try {
+        console.log("CitizenDashboard: fetching live weather for", userCoords.lat, userCoords.lon);
+        setWeatherLoading(true);
+        setWeatherError(false);
+        
+        const response = await getWeather(userCoords.lat, userCoords.lon);
+        console.log("Weather response:", response.data);
+        
+        if (response.data.success && response.data.weather) {
+          setWeather(response.data.weather);
+        } else {
+          setWeatherError(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch weather:", error);
+        setWeatherError(true);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, [userCoords]);
+
+  // Fetch health advisory
   useEffect(() => {
     const fetchHealthAdvisory = async () => {
       try {
-        console.log("Request sent to backend");
         const response = await getHealthAdvisory();
-        console.log("Backend returned:", response.data);
         setHealthAdvisory(response.data.advisory);
       } catch (error) {
         console.error("Failed to fetch health advisory:", error);
@@ -107,328 +152,358 @@ export const CitizenDashboard = () => {
     fetchHealthAdvisory();
   }, []);
 
-  const handleFindHospitals = async () => {
-    try {
-      const response = await getNearbyHospitals();
-      setHospitals(response.data.places || []);
-      setShowHospitals(true);
-    } catch (error) {
-      console.error("Failed to fetch hospitals:", error);
-    }
+  const handleSectionChange = (section: SectionType) => {
+    console.log("Sidebar: switched to section", section);
+    setActiveSection(section);
   };
+
+
 
   const handleEmergency = () => {
     window.open("tel:108", "_self");
   };
 
+  const getHealthRecommendation = (temp: number): string => {
+    if (temp > 32) {
+      return "🌡️ High temperature detected. Stay hydrated, avoid going out in peak afternoon heat, and wear light clothing.";
+    } else if (temp < 15) {
+      return "❄️ Cold weather alert. Keep warm, avoid sudden exposure to cold air, and drink warm fluids.";
+    } else {
+      return "☀️ Weather is moderate. Maintain regular hydration, light activity, and balanced nutrition.";
+    }
+  };
+
+  // Sidebar navigation
+  const sidebarLinks = [
+    { icon: Home, label: "Health Metrics", section: "health" as SectionType },
+    { icon: Calendar, label: "Appointments", section: "appointments" as SectionType },
+    { icon: MapPin, label: "Find Hospitals", section: "hospitals" as SectionType },
+    { icon: MessageSquare, label: "AI Consultation", section: "ai" as SectionType },
+    { icon: Bell, label: "Notifications", section: "notifications" as SectionType },
+    { icon: Settings, label: "Settings", section: "settings" as SectionType },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardSidebar type="citizen" />
-      
-      <main className="ml-64 p-8">
+    <div className="min-h-screen bg-background flex">
+      {/* Functional Sidebar */}
+      <motion.aside
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="fixed left-0 top-0 h-full w-64 glass-card rounded-none border-r border-border/30 p-6 flex flex-col z-40"
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+            <Activity className="text-white" size={24} />
+          </div>
+          <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            HealthAI
+          </span>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-2">
+          {sidebarLinks.map((link, index) => {
+            const isActive = activeSection === link.section;
+            const Icon = link.icon;
+
+            return (
+              <motion.button
+                key={link.section}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => handleSectionChange(link.section)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border-l-4 border-blue-400"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <Icon size={20} />
+                <span className="font-medium">{link.label}</span>
+              </motion.button>
+            );
+          })}
+        </nav>
+
+        {/* Logout */}
+        <button
+          onClick={() => navigate("/login")}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+        >
+          <LogOut size={20} />
+          <span className="font-medium">Logout</span>
+        </button>
+      </motion.aside>
+
+      {/* Main Content */}
+      <main className="ml-64 flex-1 p-4 sm:p-8 w-full max-w-[calc(100vw-16rem)] overflow-x-hidden">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Good morning, <span className="healthcare-gradient-text">Hriday</span>! 👋
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            Good morning, <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">User</span>! 👋
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-slate-600">
             Here's your health overview for today
           </p>
         </motion.div>
 
-        {/* Health Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {healthMetrics.map((metric, index) => (
-            <StatCard
-              key={metric.title}
-              {...metric}
-              delay={index * 0.1}
-            />
-          ))}
-        </div>
+        {/* Dynamic Content Based on Active Section */}
+        {activeSection === "health" && (
+          <>
+            {/* Health Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+              {healthMetrics.map((metric, index) => (
+                <StatCard
+                  key={metric.title}
+                  {...metric}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Weather Card */}
-          <div className="lg:col-span-2">
-            <WeatherCard />
-          </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+              {/* Dynamic Weather Card */}
+              <div className="lg:col-span-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card p-6 overflow-hidden relative"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+                  
+                  <div className="relative z-10">
+                    {weatherLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-slate-600">Loading live weather...</p>
+                      </div>
+                    ) : weatherError ? (
+                      <div className="text-center py-8">
+                        <p className="text-red-600 text-sm">Unable to fetch live weather. Please try again.</p>
+                      </div>
+                    ) : weather ? (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-800">Weather & Health</h3>
+                            <p className="text-sm text-slate-600">📍 {weather.city} - Live Data</p>
+                          </div>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Sun className="text-yellow-500" size={40} />
+                          </motion.div>
+                        </div>
 
-          {/* Upcoming Appointments */}
+                        <div className="flex items-center gap-2 mb-6">
+                          <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                            {Math.round(weather.temperature)}°
+                          </span>
+                          <span className="text-xl text-slate-600">C</span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                          <div className="flex items-center gap-2">
+                            <Cloud className="text-slate-600" size={18} />
+                            <span className="text-sm text-slate-600 capitalize">{weather.description}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Droplets className="text-blue-600" size={18} />
+                            <span className="text-sm text-slate-600">{weather.humidity}%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Wind className="text-slate-600" size={18} />
+                            <span className="text-sm text-slate-600">{weather.windSpeed} km/h</span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <Thermometer className="text-green-600 shrink-0 mt-0.5" size={20} />
+                            <div>
+                              <p className="text-sm font-medium text-slate-800 mb-1">Health Recommendation</p>
+                              <p className="text-sm text-slate-600">{getHealthRecommendation(weather.temperature)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Upcoming Appointments */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="glass-card p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    Upcoming Appointments
+                  </h3>
+                  <Button variant="ghost" size="icon" className="text-blue-600">
+                    <Plus size={20} />
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {upcomingAppointments.map((apt, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + index * 0.1 }}
+                      className="p-4 bg-slate-50 rounded-xl"
+                    >
+                      <p className="font-medium text-slate-800">{apt.doctor}</p>
+                      <p className="text-sm text-slate-600">{apt.specialty}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm">
+                        <span className="text-blue-600">{apt.date}</span>
+                        <span className="text-slate-600">{apt.time}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mb-8"
+            >
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleSectionChange("hospitals")}
+                  className="glass-card p-6 text-left group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Hospital className="text-blue-600" size={24} />
+                  </div>
+                  <h4 className="font-semibold text-slate-800 mb-1">Find Hospitals</h4>
+                  <p className="text-sm text-slate-600">Locate nearby healthcare facilities</p>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleEmergency}
+                  className="glass-card p-6 text-left group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Phone className="text-red-500" size={24} />
+                  </div>
+                  <h4 className="font-semibold text-slate-800 mb-1">Emergency</h4>
+                  <p className="text-sm text-slate-600">Call 108 - Emergency services</p>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleSectionChange("ai")}
+                  className="glass-card p-6 text-left group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Lightbulb className="text-green-600" size={24} />
+                  </div>
+                  <h4 className="font-semibold text-slate-800 mb-1">Health Tips</h4>
+                  <p className="text-sm text-slate-600">AI-powered recommendations</p>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleSectionChange("appointments")}
+                  className="glass-card p-6 text-left group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Calendar className="text-purple-500" size={24} />
+                  </div>
+                  <h4 className="font-semibold text-slate-800 mb-1">Appointments</h4>
+                  <p className="text-sm text-slate-600">Schedule your next visit</p>
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {activeSection === "appointments" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="glass-card p-6"
+            className="glass-card p-8"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">
-                Upcoming Appointments
-              </h3>
-              <Button variant="ghost" size="icon" className="text-primary">
-                <Plus size={20} />
-              </Button>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Appointments</h2>
+            <p className="text-slate-600 mb-6">No appointments yet</p>
+            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+              Book Appointment (coming soon)
+            </Button>
+          </motion.div>
+        )}
+
+        {activeSection === "hospitals" && (
+          <HospitalFinderSimple />
+        )}
+
+        {activeSection === "ai" && (
+          <AIConsultation userCoords={userCoords} />
+        )}
+
+        {activeSection === "notifications" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-8"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Notifications</h2>
             <div className="space-y-4">
-              {upcomingAppointments.map((apt, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="p-4 bg-accent/50 rounded-xl"
-                >
-                  <p className="font-medium text-foreground">{apt.doctor}</p>
-                  <p className="text-sm text-muted-foreground">{apt.specialty}</p>
-                  <div className="flex items-center gap-4 mt-2 text-sm">
-                    <span className="text-healthcare-blue">{apt.date}</span>
-                    <span className="text-muted-foreground">{apt.time}</span>
-                  </div>
-                </motion.div>
-              ))}
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-slate-600">No new notifications</p>
+              </div>
             </div>
           </motion.div>
-        </div>
+        )}
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mb-8"
-        >
-          <h3 className="text-xl font-semibold text-foreground mb-4">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleFindHospitals}
-              className="glass-card p-6 text-left group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-healthcare-light-blue flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Hospital className="text-healthcare-blue" size={24} />
+        {activeSection === "settings" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-8"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Settings</h2>
+            <div className="space-y-6">
+              <div className="p-6 bg-slate-50 rounded-xl">
+                <h3 className="font-semibold text-slate-800 mb-2">Account Information</h3>
+                <p className="text-sm text-slate-600 mb-1">Email: citizen@test.com</p>
+                <p className="text-sm text-slate-600">Role: Citizen</p>
               </div>
-              <h4 className="font-semibold text-foreground mb-1">Find Hospitals</h4>
-              <p className="text-sm text-muted-foreground">Locate nearby healthcare facilities</p>
-            </motion.button>
-            
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleEmergency}
-              className="glass-card p-6 text-left group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Phone className="text-red-500" size={24} />
-              </div>
-              <h4 className="font-semibold text-foreground mb-1">Emergency</h4>
-              <p className="text-sm text-muted-foreground">Call 108 - Emergency services</p>
-            </motion.button>
-            
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setShowHealthTips(true)}
-              className="glass-card p-6 text-left group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-healthcare-light-green flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Lightbulb className="text-healthcare-green" size={24} />
-              </div>
-              <h4 className="font-semibold text-foreground mb-1">Health Tips</h4>
-              <p className="text-sm text-muted-foreground">Weather-based recommendations</p>
-            </motion.button>
-            
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.9 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="glass-card p-6 text-left group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Calendar className="text-purple-500" size={24} />
-              </div>
-              <h4 className="font-semibold text-foreground mb-1">Appointments</h4>
-              <p className="text-sm text-muted-foreground">Schedule your next visit</p>
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* Health Score */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="glass-card p-8 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-64 h-64 healthcare-gradient opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-            <div className="relative">
-              <svg className="w-40 h-40" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="8"
-                />
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="url(#gradient)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={283}
-                  initial={{ strokeDashoffset: 283 }}
-                  animate={{ strokeDashoffset: 283 * 0.15 }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
-                  transform="rotate(-90 50 50)"
-                />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="hsl(217 91% 60%)" />
-                    <stop offset="100%" stopColor="hsl(160 84% 39%)" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 1, type: "spring" }}
-                    className="text-4xl font-bold healthcare-gradient-text"
-                  >
-                    85
-                  </motion.span>
-                  <p className="text-sm text-muted-foreground">Health Score</p>
-                </div>
-              </div>
+              <Button 
+                onClick={() => navigate("/login")}
+                variant="destructive"
+              >
+                Logout
+              </Button>
             </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold text-foreground mb-2">
-                Your Health Score is Excellent!
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                You're doing great! Keep maintaining your healthy lifestyle with regular
-                exercise, balanced diet, and adequate sleep.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {["Exercise", "Nutrition", "Sleep", "Hydration"].map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </main>
 
       <FloatingChatbot />
-      
-      {/* Hospitals Dialog */}
-      <Dialog open={showHospitals} onOpenChange={setShowHospitals}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nearby Medical Facilities</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            {hospitals.map((place, index) => (
-              <div key={index} className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin size={16} className="text-healthcare-blue" />
-                  <h4 className="font-semibold">{place.name || "Medical Facility"}</h4>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Type: {place.type || "Healthcare"} | Distance: {place.distance || "N/A"}
-                </p>
-                {place.address && (
-                  <p className="text-sm">{place.address}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Health Tips Dialog */}
-      <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Weather-Based Health Recommendations</DialogTitle>
-          </DialogHeader>
-          {healthAdvisory && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">Current Weather</h4>
-                  <p className="text-sm text-blue-700">{healthAdvisory.weather_alert}</p>
-                </div>
-                
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Recommended Foods</h4>
-                  <ul className="text-sm text-green-700 space-y-1">
-                    {healthAdvisory.foods?.map((food: string, i: number) => (
-                      <li key={i}>• {food}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <h4 className="font-semibold text-orange-800 mb-2">Recommended Fruits</h4>
-                  <ul className="text-sm text-orange-700 space-y-1">
-                    {healthAdvisory.fruits?.map((fruit: string, i: number) => (
-                      <li key={i}>• {fruit}</li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <h4 className="font-semibold text-purple-800 mb-2">Ayurvedic Tips</h4>
-                  <ul className="text-sm text-purple-700 space-y-1">
-                    {healthAdvisory.ayurvedic?.map((tip: string, i: number) => (
-                      <li key={i}>• {tip}</li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div className="p-4 bg-red-50 rounded-lg">
-                  <h4 className="font-semibold text-red-800 mb-2">Avoid</h4>
-                  <ul className="text-sm text-red-700 space-y-1">
-                    {healthAdvisory.avoid?.map((item: string, i: number) => (
-                      <li key={i}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
