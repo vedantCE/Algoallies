@@ -9,7 +9,7 @@ import {
 import { FloatingChatbot } from "@/components/FloatingChatbot";
 import { StatCard } from "@/components/StatCard";
 import { SurgePredictionDashboard } from "@/components/SurgePredictionDashboard";
-import { MultiCityComparison } from "@/components/MultiCityComparison";
+
 import { AutonomousAgentPanel } from "@/components/AutonomousAgentPanel";
 import { Button } from "@/components/ui/button";
 import { 
@@ -67,10 +67,15 @@ export const HospitalDashboard = () => {
         },
         (error) => {
           console.error("Geolocation error:", error);
-          // Fallback to Mumbai coordinates
+          // Always fallback to Mumbai coordinates - this ensures the app works
           const fallback = { lat: 19.0760, lon: 72.8777 };
           console.log("Using fallback coordinates:", fallback);
           setUserCoords(fallback);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
         }
       );
     } else {
@@ -114,20 +119,22 @@ export const HospitalDashboard = () => {
 
   // Fetch data based on selected section
   useEffect(() => {
+    if (!userCoords) return; // Wait for coordinates
+    
     const fetchSectionData = async () => {
       try {
         switch (selectedSection) {
           case "staff":
             const [staffRes, staffRecRes] = await Promise.all([
-              getStaff(),
-              getStaffRecommendations()
+              getStaff(userCoords?.lat, userCoords?.lon),
+              getStaffRecommendations(userCoords?.lat, userCoords?.lon)
             ]);
             if (staffRes.data.success) setStaff(staffRes.data.staff);
             if (staffRecRes.data.success) setStaffRecommendations(staffRecRes.data.recommendations);
             break;
             
           case "inventory":
-            const invRes = await getInventory();
+            const invRes = await getInventory(userCoords?.lat, userCoords?.lon);
             if (invRes.data.success) setInventory(invRes.data.inventory);
             break;
             
@@ -147,14 +154,14 @@ export const HospitalDashboard = () => {
     };
 
     fetchSectionData();
-  }, [selectedSection]);
+  }, [selectedSection, userCoords]);
 
   // Handle inventory status updates
   const handleInventoryStatusUpdate = async (itemId: string, status: string) => {
     try {
       await updateInventoryStatus(itemId, status);
       // Refresh inventory data
-      const invRes = await getInventory();
+      const invRes = await getInventory(userCoords?.lat, userCoords?.lon);
       if (invRes.data.success) setInventory(invRes.data.inventory);
     } catch (error) {
       console.error("Error updating inventory status:", error);
@@ -165,8 +172,8 @@ export const HospitalDashboard = () => {
   const handleRecalculateInventory = async () => {
     try {
       setInventoryLoading(true);
-      await recalculateInventory();
-      const invRes = await getInventory();
+      await recalculateInventory(userCoords?.lat, userCoords?.lon);
+      const invRes = await getInventory(userCoords?.lat, userCoords?.lon);
       if (invRes.data.success) setInventory(invRes.data.inventory);
     } catch (error) {
       console.error("Error recalculating inventory:", error);
@@ -183,7 +190,7 @@ export const HospitalDashboard = () => {
     { id: "inventory", label: "Inventory", icon: Package },
     { id: "surge", label: "Surge Prediction", icon: Activity },
     { id: "agent", label: "AI Agent", icon: Activity },
-    { id: "cities", label: "Multi-City", icon: Activity },
+
     { id: "reports", label: "Reports", icon: FileText },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -615,9 +622,9 @@ export const HospitalDashboard = () => {
           {selectedSection === "patients" && <PatientsSection />}
           {selectedSection === "staff" && <StaffSection />}
           {selectedSection === "inventory" && <InventorySection />}
-          {selectedSection === "surge" && <SurgePredictionDashboard />}
+          {selectedSection === "surge" && <SurgePredictionDashboard userCoords={userCoords} />}
           {selectedSection === "agent" && <AutonomousAgentPanel />}
-          {selectedSection === "cities" && <MultiCityComparison />}
+
           {selectedSection === "reports" && <ReportsSection />}
           {selectedSection === "settings" && <SettingsSection />}
         </motion.div>
