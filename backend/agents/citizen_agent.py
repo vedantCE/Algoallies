@@ -206,21 +206,40 @@ FORMATTING RULES:
     temp = weather.get('temperature', 25)
     humidity = weather.get('humidity', 60)
     conditions = weather.get('description', 'moderate')
+    aqi = weather.get('aqi', 50)
+    aqi_category = weather.get('aqi_category', 'Good')
+    
+    # Add randomization to prevent identical responses
+    import random
+    time_variations = [
+        "morning routine", "daily schedule", "today's plan", "wellness routine"
+    ]
+    focus_areas = [
+        "immunity boosting", "energy optimization", "stress management", "digestive health"
+    ]
+    
+    selected_time = random.choice(time_variations)
+    selected_focus = random.choice(focus_areas)
     
     human_message = HumanMessage(content=f"""
-User's Health Question: "{user_message}"
+User's Personalized Health Request: "{user_message}"
 
-Current Weather Data:
+Current Environmental Data:
 - Temperature: {temp}°C
 - Humidity: {humidity}%
 - Weather Conditions: {conditions}
+- Air Quality Index: {aqi} ({aqi_category})
+- Focus Area: {selected_focus}
+- Schedule Type: {selected_time}
 
-IMPORTANT: Provide a COMPLETE, DETAILED response with ALL 10 mandatory sections.
-Customize every section based on:
-1. The user's specific question/concern
-2. Current weather conditions (temperature {temp}°C, humidity {humidity}%, {conditions})
+IMPORTANT: Create a UNIQUE, PERSONALIZED response with ALL 10 mandatory sections.
+Customize every recommendation based on:
+1. The user's specific profile, age, gender, health conditions, and preferences mentioned
+2. Current weather and air quality (temp {temp}°C, humidity {humidity}%, AQI {aqi})
+3. Focus on {selected_focus} and create a {selected_time}
+4. Make each recommendation specific to the user's individual needs
 
-Make the advice practical, specific, and weather-appropriate. Include exact timings, quantities, and step-by-step instructions.
+Generate FRESH, VARIED content - avoid generic responses. Include specific quantities, timings, and personalized advice.
 """)
     
     # Create message list for LangChain model invocation
@@ -233,7 +252,8 @@ Make the advice practical, specific, and weather-appropriate. Include exact timi
     try:
         print("CitizenAI: invoking Gemini model via LangChain")
         print(f"CitizenAI: User message - {user_message[:100]}...")
-        print(f"CitizenAI: Weather context - Temp: {temp}°C, Humidity: {humidity}%, Conditions: {conditions}")
+        print(f"CitizenAI: Weather context - Temp: {temp}°C, Humidity: {humidity}%, Conditions: {conditions}, AQI: {aqi}")
+        print(f"CitizenAI: Focus: {selected_focus}, Schedule: {selected_time}")
         
         # Invoke the model with structured messages
         # LangChain handles API communication and response parsing automatically
@@ -263,17 +283,24 @@ Make the advice practical, specific, and weather-appropriate. Include exact timi
                 print(f"CitizenAI: JSON parse error - {je}")
                 print(f"CitizenAI: Raw response - {response.content[:500]}")
                 # Return fallback structure
+                # Generate a basic personalized fallback based on weather
+                fallback_diet = [
+                    f"Breakfast: Warm oats with seasonal fruits (temp: {temp}°C)",
+                    f"Lunch: Light meal suitable for {conditions} weather",
+                    f"Dinner: Balanced meal with hydration focus (humidity: {humidity}%)"
+                ]
+                
                 return {
-                    "weatherImpact": "Unable to generate detailed plan. Please try again.",
-                    "dietPlan": ["Error generating diet plan"],
-                    "avoidThese": ["Error generating recommendations"],
-                    "ayurvedicTips": ["Error generating tips"],
-                    "hydrationPlan": ["Drink 8-10 glasses of water daily"],
-                    "sleepGuidance": ["Aim for 7-8 hours of sleep"],
-                    "clothingSuggestions": ["Wear weather-appropriate clothing"],
-                    "outdoorSafety": ["Be cautious outdoors"],
-                    "mindBodyWellness": ["Practice daily meditation"],
-                    "dailySummary": "Please try asking your question again."
+                    "weatherImpact": f"Current weather ({temp}°C, {humidity}% humidity) requires specific health adjustments. Please try generating again.",
+                    "dietPlan": fallback_diet,
+                    "avoidThese": [f"Heavy foods in {conditions} weather", "Excessive sun exposure"],
+                    "ayurvedicTips": ["Stay hydrated with herbal teas", "Practice breathing exercises"],
+                    "hydrationPlan": [f"Increase water intake due to {humidity}% humidity"],
+                    "sleepGuidance": ["Adjust sleep environment for current weather"],
+                    "clothingSuggestions": [f"Light clothing for {temp}°C temperature"],
+                    "outdoorSafety": [f"Be cautious with AQI at {aqi} ({aqi_category})"],
+                    "mindBodyWellness": ["Weather-appropriate meditation and yoga"],
+                    "dailySummary": f"Focus on weather adaptation for {conditions} conditions. Please regenerate for detailed plan."
                 }
         else:
             print(f"CitizenAI: Response preview - {response.content[:200]}...")
@@ -281,4 +308,16 @@ Make the advice practical, specific, and weather-appropriate. Include exact timi
         
     except Exception as e:
         print(f"CitizenAI: Error - {str(e)}")
-        raise e
+        # Return a basic weather-aware fallback instead of raising error
+        return {
+            "weatherImpact": f"Weather conditions: {temp}°C, {humidity}% humidity. Health adjustments needed.",
+            "dietPlan": ["Seasonal, weather-appropriate meals recommended"],
+            "avoidThese": ["Foods unsuitable for current weather conditions"],
+            "ayurvedicTips": ["Traditional remedies for current climate"],
+            "hydrationPlan": ["Weather-based hydration strategy needed"],
+            "sleepGuidance": ["Sleep adjustments for current conditions"],
+            "clothingSuggestions": [f"Appropriate attire for {temp}°C"],
+            "outdoorSafety": ["Weather-specific safety measures"],
+            "mindBodyWellness": ["Climate-adapted wellness practices"],
+            "dailySummary": "Personalized plan temporarily unavailable. Please try again."
+        }

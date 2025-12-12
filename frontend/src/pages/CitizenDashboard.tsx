@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { 
   Heart, Activity, Moon, Footprints, Hospital, Phone, Lightbulb, 
   Calendar, Plus, MapPin, X, Settings, Bell, MessageSquare, Home,
-  LogOut, Cloud, Droplets, Wind, Sun, Thermometer
+  LogOut, Cloud, Droplets, Wind, Sun, Thermometer, User
 } from "lucide-react";
 import { FloatingChatbot } from "@/components/FloatingChatbot";
 import { StatCard } from "@/components/StatCard";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getHealthAdvisory, getWeather } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 
-type SectionType = "health" | "appointments" | "hospitals" | "ai" | "notifications" | "settings";
+type SectionType = "health" | "appointments" | "hospitals" | "ai" | "profile" | "notifications" | "settings";
 
 interface WeatherData {
   temperature: number;
@@ -184,6 +184,7 @@ export const CitizenDashboard = () => {
     { icon: Calendar, label: "Appointments", section: "appointments" as SectionType },
     { icon: MapPin, label: "Find Hospitals", section: "hospitals" as SectionType },
     { icon: MessageSquare, label: "AI Consultation", section: "ai" as SectionType },
+    { icon: User, label: "Health Profile", section: "profile" as SectionType },
     { icon: Bell, label: "Notifications", section: "notifications" as SectionType },
     { icon: Settings, label: "Settings", section: "settings" as SectionType },
   ];
@@ -467,6 +468,97 @@ export const CitizenDashboard = () => {
 
         {activeSection === "ai" && (
           <AIConsultation userCoords={userCoords} />
+        )}
+
+        {activeSection === "profile" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-8"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Health Profile</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Age</label>
+                <input 
+                  type="number" 
+                  placeholder="Enter your age"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
+                    profile.age = e.target.value;
+                    localStorage.setItem('healthProfile', JSON.stringify(profile));
+                  }}
+                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').age || ''}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Gender</label>
+                <select 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
+                    profile.gender = e.target.value;
+                    localStorage.setItem('healthProfile', JSON.stringify(profile));
+                  }}
+                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').gender || ''}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Weight (kg)</label>
+                <input 
+                  type="number" 
+                  placeholder="Enter your weight"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
+                    profile.weight = e.target.value;
+                    localStorage.setItem('healthProfile', JSON.stringify(profile));
+                  }}
+                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').weight || ''}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Activity Level</label>
+                <select 
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
+                    profile.activityLevel = e.target.value;
+                    localStorage.setItem('healthProfile', JSON.stringify(profile));
+                  }}
+                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').activityLevel || 'moderate'}
+                >
+                  <option value="sedentary">Sedentary</option>
+                  <option value="light">Light Activity</option>
+                  <option value="moderate">Moderate Activity</option>
+                  <option value="active">Very Active</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Health Conditions</label>
+              <textarea 
+                placeholder="Any chronic conditions, allergies, or medications (optional)"
+                rows={3}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => {
+                  const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
+                  profile.healthConditions = e.target.value;
+                  localStorage.setItem('healthProfile', JSON.stringify(profile));
+                }}
+                defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').healthConditions || ''}
+              />
+            </div>
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-700">✓ Profile saved automatically. Go to AI Consultation to generate your personalized health plan.</p>
+            </div>
+          </motion.div>
         )}
 
         {activeSection === "notifications" && (

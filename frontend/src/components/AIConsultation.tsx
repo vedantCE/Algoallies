@@ -2,16 +2,26 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Loader2, Sun, Utensils, Ban, Leaf, Droplets, 
-  Moon, Shirt, AlertTriangle, Heart, Sparkles, RefreshCw 
+  Moon, Shirt, AlertTriangle, Heart, Sparkles, RefreshCw, User 
 } from "lucide-react";
 import { getCitizenAIPlan } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface HealthPlan {
   weatherImpact: string;
@@ -26,126 +36,72 @@ interface HealthPlan {
   dailySummary: string;
 }
 
+interface UserProfile {
+  age: string;
+  gender: string;
+  healthConditions: string;
+  dietaryPreferences: string;
+  activityLevel: string;
+  currentSymptoms: string;
+}
+
 interface AIConsultationProps {
   userCoords: { lat: number; lon: number } | null;
 }
 
-const CACHE_KEY = 'citizen_health_plan';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-
 export const AIConsultation = ({ userCoords }: AIConsultationProps) => {
-  const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [plan, setPlan] = useState<HealthPlan | null>(null);
-  const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
 
-  // Load cached plan on component mount
-  useEffect(() => {
-    const cachedData = sessionStorage.getItem(CACHE_KEY);
-    if (cachedData) {
-      try {
-        const { plan: cachedPlan, timestamp } = JSON.parse(cachedData);
-        const now = new Date().getTime();
-        
-        // Check if cache is still valid (30 minutes)
-        if (now - timestamp < CACHE_DURATION) {
-          console.log("AIConsultation: Loading cached health plan");
-          setPlan(cachedPlan);
-          setLastGenerated(new Date(timestamp));
-          return;
-        } else {
-          console.log("AIConsultation: Cache expired, clearing");
-          sessionStorage.removeItem(CACHE_KEY);
-        }
-      } catch (e) {
-        console.log("AIConsultation: Invalid cache, clearing");
-        sessionStorage.removeItem(CACHE_KEY);
-      }
-    }
-    
-    // Only auto-generate if no valid cache
-    console.log("AIConsultation: No valid cache, auto-generating plan");
-    autoGeneratePlan();
-  }, []);
 
-  const autoGeneratePlan = async () => {
+
+  const generatePersonalizedPlan = async () => {
     setLoading(true);
     setError("");
+    setPlan(null);
     
     try {
-      // Use provided coordinates or fallback to Mumbai
       const coords = userCoords || { lat: 19.0760, lon: 72.8777 };
+      const healthProfile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
       
-      const defaultMessage = "Give me today's complete health plan with all 9 sections: Weather Impact, Diet Plan, Avoid These, Ayurvedic Tips, Hydration Plan, Sleep Guidance, Clothing Suggestions, Outdoor Safety, and Mind & Body Wellness based on current weather";
-      console.log("AI Consultation: generating comprehensive plan", { 
-        message: defaultMessage, 
-        lat: coords.lat, 
-        lon: coords.lon 
-      });
+      let personalizedMessage;
       
-      const response = await getCitizenAIPlan(defaultMessage, coords.lat, coords.lon);
-      console.log("AI Consultation: generated response", response.data);
-      
-      if (response.data.success && response.data.data) {
-        const newPlan = response.data.data;
-        const timestamp = new Date().getTime();
-        
-        // Cache the plan
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-          plan: newPlan,
-          timestamp
-        }));
-        
-        setPlan(newPlan);
-        setLastGenerated(new Date(timestamp));
+      if (healthProfile.age && healthProfile.gender) {
+        // Use complete profile
+        personalizedMessage = `Create a personalized health plan for:
+- Age: ${healthProfile.age}
+- Gender: ${healthProfile.gender}
+- Weight: ${healthProfile.weight || 'Not specified'}
+- Health Conditions: ${healthProfile.healthConditions || 'None specified'}
+- Activity Level: ${healthProfile.activityLevel || 'Moderate'}
+
+Provide complete health plan with all 9 sections based on current weather and my personal profile.`;
       } else {
-        setError("Failed to generate health plan. Please try again.");
+        // Generate general recommendations and suggest profile completion
+        personalizedMessage = `Create a general health plan based on current weather conditions. Include a note that completing the Health Profile (age, gender, weight) will provide more personalized recommendations. Provide complete health plan with all 9 sections.`;
       }
-    } catch (err: any) {
-      console.error("AI Consultation: generation error", err);
-      setError(err.response?.data?.message || "Failed to generate health plan");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGetPlan = async () => {
-    if (!question.trim()) {
-      setError("Please enter a question");
-      return;
-    }
-
-    if (!userCoords) {
-      setError("Location not available. Please enable location services.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    
-    try {
-      console.log("AI Consultation: sending request", { 
-        message: question, 
-        lat: userCoords.lat, 
-        lon: userCoords.lon 
-      });
       
-      const response = await getCitizenAIPlan(question, userCoords.lat, userCoords.lon);
-      console.log("AI Consultation: response", response.data);
+      const response = await getCitizenAIPlan(personalizedMessage, coords.lat, coords.lon);
       
       if (response.data.success && response.data.data) {
         setPlan(response.data.data);
+        
+        // Show suggestion if profile is incomplete
+        if (!healthProfile.age || !healthProfile.gender) {
+          setError("💡 Tip: Complete your Health Profile for more personalized recommendations!");
+        }
       } else {
         setError("Failed to generate health plan. Please try again.");
       }
     } catch (err: any) {
-      console.error("AI Consultation: error", err);
-      setError(err.response?.data?.message || "Failed to generate health plan");
+      setError("Failed to generate health plan. Please check your internet connection.");
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const sections = plan ? [
     { icon: Sun, title: "Weather Impact", content: plan.weatherImpact, color: "bg-yellow-50 border-yellow-200" },
@@ -161,35 +117,47 @@ export const AIConsultation = ({ userCoords }: AIConsultationProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Regenerate Button */}
-      {plan && (
-        <div className="glass-card p-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-800">AI Health Consultation</h2>
-            {lastGenerated && (
-              <p className="text-sm text-slate-600">
-                Generated: {lastGenerated.toLocaleTimeString()}
-              </p>
-            )}
-          </div>
+      {/* Header */}
+      <div className="glass-card p-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">AI Health Consultation</h2>
+          <p className="text-sm text-slate-600">Personalized health recommendations</p>
+        </div>
+        <div className="flex gap-2">
           <Button
-            onClick={autoGeneratePlan}
+            onClick={generatePersonalizedPlan}
             disabled={loading}
-            variant="outline"
+            variant="default"
             size="sm"
-            className="flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700"
           >
             {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
             ) : (
-              <RefreshCw className="h-4 w-4" />
+              "Generate Health Plan"
             )}
-            {loading ? "Regenerating..." : "Regenerate Plan"}
           </Button>
+          {plan && (
+            <Button
+              onClick={generatePersonalizedPlan}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Regenerate
+            </Button>
+          )}
         </div>
-      )}
+      </div>
 
-      {loading && !plan && (
+
+
+      {loading && (
         <div className="glass-card p-8 text-center">
           <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-600 mb-4" />
           <p className="text-slate-600 font-medium">Generating your personalized health plan...</p>
@@ -197,10 +165,20 @@ export const AIConsultation = ({ userCoords }: AIConsultationProps) => {
       )}
 
       {error && (
-        <div className="glass-card p-6 bg-red-50 border-2 border-red-200">
-          <p className="text-red-700 font-medium">{error}</p>
+        <div className={`glass-card p-6 border-2 ${
+          error.includes('💡 Tip') 
+            ? 'bg-blue-50 border-blue-200' 
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <p className={`font-medium ${
+            error.includes('💡 Tip') 
+              ? 'text-blue-700' 
+              : 'text-red-700'
+          }`}>{error}</p>
         </div>
       )}
+
+
 
       {plan && (
         <motion.div
