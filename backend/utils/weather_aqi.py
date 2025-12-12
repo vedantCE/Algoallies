@@ -10,16 +10,16 @@ from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    print("Warning: GEMINI_API_KEY not found in .env - chatbot features disabled")
-    GEMINI_API_KEY = None
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    print("Warning: GOOGLE_API_KEY not found in .env - chatbot features disabled")
+    GOOGLE_API_KEY = None
 
 llm = None
-if GEMINI_API_KEY:
+if GOOGLE_API_KEY:
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
-        api_key=GEMINI_API_KEY,
+        api_key=GOOGLE_API_KEY,
         temperature=0.3,
     )
 
