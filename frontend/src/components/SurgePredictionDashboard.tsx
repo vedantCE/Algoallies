@@ -40,9 +40,10 @@ interface SurgeReport {
 
 interface SurgePredictionDashboardProps {
   onRefresh?: () => void;
+  userCoords?: { lat: number; lon: number } | null;
 }
 
-export const SurgePredictionDashboard = ({ onRefresh }: SurgePredictionDashboardProps) => {
+export const SurgePredictionDashboard = ({ onRefresh, userCoords }: SurgePredictionDashboardProps) => {
   const [surgeData, setSurgeData] = useState<SurgeReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -52,11 +53,17 @@ export const SurgePredictionDashboard = ({ onRefresh }: SurgePredictionDashboard
       setLoading(true);
       setError("");
       
-      const response = await fetch("http://127.0.0.1:8000/api/surge/prediction");
+      // Build URL with location parameters if available
+      let url = "http://127.0.0.1:8000/api/surge/prediction";
+      if (userCoords) {
+        url += `?lat=${userCoords.lat}&lon=${userCoords.lon}`;
+      }
+      
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success) {
-        setSurgeData(data.surge_report);
+        setSurgeData(data.prediction);
       } else {
         setError(data.message || "Failed to fetch surge data");
       }
