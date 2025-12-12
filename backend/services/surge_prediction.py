@@ -26,9 +26,12 @@ class SurgePredictionService:
             "monsoon": 1.3            # Monsoon season increases cases by 30%
         }
     
-    def get_current_conditions(self, lat: float = 19.0760, lon: float = 72.8777) -> Dict[str, Any]:
+    def get_current_conditions(self, lat: float = None, lon: float = None) -> Dict[str, Any]:
         """Get current weather and AQI conditions"""
         try:
+            # Use provided coordinates or fallback to Mumbai
+            if lat is None or lon is None:
+                lat, lon = 19.0760, 72.8777
             weather_data = get_weather(lat, lon)
             if not weather_data:
                 weather_data = {"temperature": 25, "humidity": 60, "description": "moderate"}
@@ -186,7 +189,7 @@ class SurgePredictionService:
         
         return peak_hours
     
-    def generate_surge_report(self, lat: float = 19.0760, lon: float = 72.8777) -> Dict[str, Any]:
+    def generate_surge_report(self, lat: float = None, lon: float = None) -> Dict[str, Any]:
         """Generate comprehensive surge prediction report"""
         conditions = self.get_current_conditions(lat, lon)
         department_predictions = self.predict_department_surge(conditions)
