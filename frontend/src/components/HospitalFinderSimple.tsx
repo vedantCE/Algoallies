@@ -75,9 +75,10 @@ export const HospitalFinderSimple = () => {
     setHasSearched(true);
 
     try {
+      // Simple geolocation request
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         if (!navigator.geolocation) {
-          reject(new Error("Geolocation is not supported by this browser"));
+          reject(new Error("Geolocation not supported"));
           return;
         }
 
@@ -86,8 +87,8 @@ export const HospitalFinderSimple = () => {
           reject,
           {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
+            timeout: 15000,
+            maximumAge: 60000
           }
         );
       });
@@ -98,6 +99,7 @@ export const HospitalFinderSimple = () => {
       };
 
       setUserLocation(coords);
+      console.log("Got location:", coords);
 
       // Try 2.5km first, then 5km if no results
       let response = await fetch(
@@ -147,14 +149,64 @@ export const HospitalFinderSimple = () => {
     } catch (err: any) {
       console.error("Hospital search error:", err);
       
-      if (err.code === err.PERMISSION_DENIED) {
-        setError("Location access denied. Please enable location permission and try again.");
-      } else if (err.code === err.TIMEOUT) {
-        setError("Location request timed out. Please try again.");
-      } else if (err.code === err.POSITION_UNAVAILABLE) {
-        setError("Location information unavailable. Please try again.");
-      } else {
-        setError(err.message || "Failed to search for nearby hospitals. Please try again.");
+      // Use fallback location (Mumbai) and continue with search
+      const fallbackCoords = { lat: 19.0760, lon: 72.8777 };
+      setUserLocation(fallbackCoords);
+      console.log("Using fallback location:", fallbackCoords);
+      
+      // Still try to search with fallback location
+      try {
+        let response = await fetch(
+          `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=2.5`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        let data = await response.json();
+
+        if (data.success && (!data.facilities || data.facilities.length === 0)) {
+          console.log("No facilities in 2.5km, trying 5km radius...");
+          response = await fetch(
+            `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=5.0`
+          );
+          
+          if (response.ok) {
+            const fallbackData = await response.json();
+            if (fallbackData.success) {
+              data = fallbackData;
+              setRadiusKm(5.0);
+            }
+          }
+        }
+
+        if (data.success) {
+          const searchResults = data.facilities || [];
+          const timestamp = new Date().getTime();
+          
+          sessionStorage.setItem(HOSPITAL_CACHE_KEY, JSON.stringify({
+            userLocation: fallbackCoords,
+            facilities: searchResults,
+            radiusKm: data.radius_km || radiusKm,
+            timestamp
+          }));
+          
+          setFacilities(searchResults);
+          setLastSearched(new Date(timestamp));
+          
+          // Show warning about using fallback location
+          if (err.code === 1) {
+            setError("Location permission denied. Showing results for Mumbai instead.");
+          } else {
+            setError("Could not get your location. Showing results for Mumbai instead.");
+          }
+        } else {
+          throw new Error(data.message || "Failed to fetch facilities");
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback search also failed:", fallbackErr);
+        setError("Unable to fetch nearby facilities. Please check your internet connection and try again.");
       }
     } finally {
       setIsLoading(false);
