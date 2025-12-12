@@ -95,10 +95,15 @@ export const CitizenDashboard = () => {
         },
         (error) => {
           console.error("Geolocation error:", error);
-          // Fallback to Mumbai coordinates
+          // Always fallback to Mumbai coordinates - this ensures the app works
           const fallback = { lat: 19.0760, lon: 72.8777 };
           console.log("Using fallback coordinates:", fallback);
           setUserCoords(fallback);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
         }
       );
     } else {
