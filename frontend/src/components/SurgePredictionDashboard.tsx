@@ -54,7 +54,7 @@ export const SurgePredictionDashboard = ({ onRefresh, userCoords }: SurgePredict
       setError("");
       
       // Build URL with location parameters if available
-      let url = "${import.meta.env.VITE_BACKEND_URL}/api/surge/prediction";
+      let url = `${import.meta.env.VITE_BACKEND_URL}/api/surge/prediction`;
       if (userCoords) {
         url += `?lat=${userCoords.lat}&lon=${userCoords.lon}`;
       }
