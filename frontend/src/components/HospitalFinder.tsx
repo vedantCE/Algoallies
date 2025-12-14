@@ -115,7 +115,7 @@ export const HospitalFinder = ({ onClose }: HospitalFinderProps) => {
 
       // Call backend API with real coordinates
       const response = await fetch(
-        `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=${radiusKm}`
+        `${import.meta.env.VITE_BACKEND_URL}/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=${radiusKm}`
       );
 
       if (!response.ok) {

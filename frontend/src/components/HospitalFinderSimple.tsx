@@ -103,7 +103,7 @@ export const HospitalFinderSimple = () => {
 
       // Try 2.5km first, then 5km if no results
       let response = await fetch(
-        `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=2.5`
+        `${import.meta.env.VITE_BACKEND_URL}/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=2.5`
       );
 
       if (!response.ok) {
@@ -116,7 +116,7 @@ export const HospitalFinderSimple = () => {
       if (data.success && (!data.facilities || data.facilities.length === 0)) {
         console.log("No facilities in 2.5km, trying 5km radius...");
         response = await fetch(
-          `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=5.0`
+          `${import.meta.env.VITE_BACKEND_URL}/citizen/nearby-facilities?lat=${coords.lat}&lon=${coords.lon}&radius_km=5.0`
         );
         
         if (response.ok) {
@@ -157,7 +157,7 @@ export const HospitalFinderSimple = () => {
       // Still try to search with fallback location
       try {
         let response = await fetch(
-          `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=2.5`
+          `${import.meta.env.VITE_BACKEND_URL}/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=2.5`
         );
 
         if (!response.ok) {
@@ -169,7 +169,7 @@ export const HospitalFinderSimple = () => {
         if (data.success && (!data.facilities || data.facilities.length === 0)) {
           console.log("No facilities in 2.5km, trying 5km radius...");
           response = await fetch(
-            `http://127.0.0.1:8000/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=5.0`
+            `${import.meta.env.VITE_BACKEND_URL}/citizen/nearby-facilities?lat=${fallbackCoords.lat}&lon=${fallbackCoords.lon}&radius_km=5.0`
           );
           
           if (response.ok) {

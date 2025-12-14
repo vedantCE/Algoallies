@@ -61,7 +61,7 @@ export const AutonomousAgentPanel = () => {
       setLoading(true);
       setError("");
       
-      const response = await fetch("http://127.0.0.1:8000/api/autonomous/analysis", {
+      const response = await fetch("${import.meta.env.VITE_BACKEND_URL}/api/autonomous/analysis", {
         method: "GET"
       });
       const data = await response.json();
@@ -82,7 +82,7 @@ export const AutonomousAgentPanel = () => {
 
   const checkAgent = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/autonomous/check", {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/autonomous/check`, {
         method: "GET"
       });
       const data = await response.json();
