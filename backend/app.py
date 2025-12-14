@@ -71,12 +71,12 @@ def health_check():
         ]
     }
 
-# Explicit OPTIONS handling for problematic routes
-@app.options("/login")
-@app.options("/landing-response")
-async def handle_options():
-    """Handle OPTIONS preflight requests explicitly"""
-    return {"message": "OK"}
+# # Explicit OPTIONS handling for problematic routes
+# @app.options("/login")
+# @app.options("/landing-response")
+# async def handle_options():
+#     """Handle OPTIONS preflight requests explicitly"""
+#     return {"message": "OK"}
 
 if __name__ == "__main__":
     import uvicorn
