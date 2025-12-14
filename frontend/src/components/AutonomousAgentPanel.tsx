@@ -61,7 +61,7 @@ export const AutonomousAgentPanel = () => {
       setLoading(true);
       setError("");
       
-      const response = await fetch("${import.meta.env.VITE_BACKEND_URL}/api/autonomous/analysis", {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/autonomous/analysis`, {
         method: "GET"
       });
       const data = await response.json();
