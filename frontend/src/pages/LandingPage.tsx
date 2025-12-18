@@ -128,7 +128,15 @@ export const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3"
           >
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/about")}
+              className="text-gray-600 hover:text-primary"
+            >
+              About Us
+            </Button>
             <Button
               variant="outline"
               onClick={() => navigate("/login")}
