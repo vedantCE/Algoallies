@@ -6,10 +6,9 @@ Built during **Mumbai Hacks**, the largest **Agentic AI hackathon**, SurgeSense 
 
 ---
 
-## 🌐 Live Demo & Resources
+## 🌐 Live Demo 
 
-- 🔗 **Website:** https://your-website-link-here  
-- 💻 **GitHub Repository:** https://github.com/your-username/your-repo-name  
+- 🔗 **Website:** https://algoallies.vercel.app
 
 ---
 
