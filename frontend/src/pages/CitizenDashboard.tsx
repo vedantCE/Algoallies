@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Heart, Activity, Moon, Footprints, Hospital, Phone, Lightbulb, 
   Calendar, Plus, MapPin, X, Settings, Bell, MessageSquare, Home,
-  LogOut, Cloud, Droplets, Wind, Sun, Thermometer, User
+  LogOut, Cloud, Droplets, Wind, Sun, Thermometer, User, Menu
 } from "lucide-react";
 import { FloatingChatbot } from "@/components/FloatingChatbot";
 import { StatCard } from "@/components/StatCard";
@@ -78,6 +78,7 @@ export const CitizenDashboard = () => {
   const [weatherError, setWeatherError] = useState(false);
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [healthAdvisory, setHealthAdvisory] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Get user geolocation
   useEffect(() => {
@@ -160,9 +161,12 @@ export const CitizenDashboard = () => {
   const handleSectionChange = (section: SectionType) => {
     console.log("Sidebar: switched to section", section);
     setActiveSection(section);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
-
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const handleEmergency = () => {
     window.open("tel:108", "_self");
@@ -191,67 +195,102 @@ export const CitizenDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Functional Sidebar */}
-      <motion.aside
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="fixed left-0 top-0 h-full w-64 glass-card rounded-none border-r border-border/30 p-6 flex flex-col z-40"
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
-            <Activity className="text-white" size={24} />
-          </div>
-          <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-            HealthAI
-          </span>
-        </div>
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-2">
-          {sidebarLinks.map((link, index) => {
-            const isActive = activeSection === link.section;
-            const Icon = link.icon;
-
-            return (
-              <motion.button
-                key={link.section}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => handleSectionChange(link.section)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border-l-4 border-blue-400"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
+      {/* Collapsible Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.aside
+            initial={{ x: -260 }}
+            animate={{ x: 0 }}
+            exit={{ x: -260 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed left-0 top-0 h-full w-[260px] glass-card rounded-none border-r border-border/30 p-6 flex flex-col z-50 bg-white shadow-xl"
+          >
+            {/* Close Button */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+                  <Activity className="text-white" size={24} />
+                </div>
+                <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                  HealthAI
+                </span>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                <Icon size={20} />
-                <span className="font-medium">{link.label}</span>
-              </motion.button>
-            );
-          })}
-        </nav>
+                <X size={20} className="text-slate-600" />
+              </button>
+            </div>
 
-        {/* Logout */}
-        <button
-          onClick={() => navigate("/login")}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
-        >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
-        </button>
-      </motion.aside>
+            {/* Navigation */}
+            <nav className="flex-1 space-y-2">
+              {sidebarLinks.map((link, index) => {
+                const isActive = activeSection === link.section;
+                const Icon = link.icon;
+
+                return (
+                  <motion.button
+                    key={link.section}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleSectionChange(link.section)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg border-l-4 border-blue-400"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{link.label}</span>
+                  </motion.button>
+                );
+              })}
+            </nav>
+
+            {/* Logout */}
+            <button
+              onClick={() => navigate("/login")}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+            >
+              <LogOut size={20} />
+              <span className="font-medium">Logout</span>
+            </button>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <main className="ml-64 flex-1 p-4 sm:p-8 w-full max-w-[calc(100vw-16rem)] overflow-x-hidden">
-        {/* Header */}
+      <main className={`flex-1 p-4 sm:p-8 w-full overflow-x-hidden transition-all duration-300 ${sidebarOpen ? 'ml-[260px]' : 'ml-0'}`}>
+        {/* Header with Hamburger */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <Menu size={24} className="text-slate-600" />
+            </button>
+          </div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             Good morning, <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">User</span>! 👋
           </h1>
@@ -262,302 +301,145 @@ export const CitizenDashboard = () => {
 
         {/* Dynamic Content Based on Active Section */}
         {activeSection === "health" && (
-          <>
-            {/* Health Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            {/* Health Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {healthMetrics.map((metric, index) => (
-                <StatCard
+                <motion.div
                   key={metric.title}
-                  {...metric}
-                  delay={index * 0.1}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <StatCard {...metric} />
+                </motion.div>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-              {/* Dynamic Weather Card */}
-              <div className="lg:col-span-2">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass-card p-6 overflow-hidden relative"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-                  
-                  <div className="relative z-10">
-                    {weatherLoading ? (
-                      <div className="text-center py-8">
-                        <p className="text-slate-600">Loading live weather...</p>
-                      </div>
-                    ) : weatherError ? (
-                      <div className="text-center py-8">
-                        <p className="text-red-600 text-sm">Unable to fetch live weather. Please try again.</p>
-                      </div>
-                    ) : weather ? (
-                      <>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-slate-800">Weather & Health</h3>
-                            <p className="text-sm text-slate-600">📍 {weather.city} - Live Data</p>
-                          </div>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                          >
-                            <Sun className="text-yellow-500" size={40} />
-                          </motion.div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mb-6">
-                          <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                            {Math.round(weather.temperature)}°
-                          </span>
-                          <span className="text-xl text-slate-600">C</span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 mb-6">
-                          <div className="flex items-center gap-2">
-                            <Cloud className="text-slate-600" size={18} />
-                            <span className="text-sm text-slate-600 capitalize">{weather.description}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Droplets className="text-blue-600" size={18} />
-                            <span className="text-sm text-slate-600">{weather.humidity}%</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Wind className="text-slate-600" size={18} />
-                            <span className="text-sm text-slate-600">{weather.windSpeed} km/h</span>
-                          </div>
-                        </div>
-
-                        <div className="p-4 bg-blue-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <Thermometer className="text-green-600 shrink-0 mt-0.5" size={20} />
-                            <div>
-                              <p className="text-sm font-medium text-slate-800 mb-1">Health Recommendation</p>
-                              <p className="text-sm text-slate-600">{getHealthRecommendation(weather.temperature)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Upcoming Appointments */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="glass-card p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    Upcoming Appointments
-                  </h3>
-                  <Button variant="ghost" size="icon" className="text-blue-600">
-                    <Plus size={20} />
-                  </Button>
+            {/* Weather & Health Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="glass-card p-6 rounded-2xl"
+            >
+              <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <Cloud className="text-blue-600" size={24} />
+                Weather & Health Advisory
+              </h2>
+              
+              {weatherLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-slate-200 rounded w-1/2"></div>
                 </div>
+              ) : weatherError ? (
+                <p className="text-slate-600">Unable to load weather data</p>
+              ) : weather ? (
                 <div className="space-y-4">
-                  {upcomingAppointments.map((apt, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className="p-4 bg-slate-50 rounded-xl"
-                    >
-                      <p className="font-medium text-slate-800">{apt.doctor}</p>
-                      <p className="text-sm text-slate-600">{apt.specialty}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <span className="text-blue-600">{apt.date}</span>
-                        <span className="text-slate-600">{apt.time}</span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-slate-800">{weather.temperature}°C</p>
+                      <p className="text-slate-600 capitalize">{weather.description}</p>
+                      <p className="text-sm text-slate-500">{weather.city}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Droplets size={16} />
+                        {weather.humidity}% humidity
                       </div>
-                    </motion.div>
-                  ))}
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Wind size={16} />
+                        {weather.windSpeed} km/h
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-xl">
+                    <p className="text-sm text-blue-800">
+                      {getHealthRecommendation(weather.temperature)}
+                    </p>
+                  </div>
                 </div>
-              </motion.div>
-            </div>
+              ) : null}
+            </motion.div>
 
-            {/* Quick Actions */}
+            {/* Upcoming Appointments */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="mb-8"
+              className="glass-card p-6 rounded-2xl"
             >
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">
-                Quick Actions
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleSectionChange("hospitals")}
-                  className="glass-card p-6 text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Hospital className="text-blue-600" size={24} />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                  <Calendar className="text-green-600" size={24} />
+                  Upcoming Appointments
+                </h2>
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-green-600">
+                  <Plus size={16} className="mr-1" />
+                  Book
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {upcomingAppointments.map((appointment, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div>
+                      <p className="font-medium text-slate-800">{appointment.doctor}</p>
+                      <p className="text-sm text-slate-600">{appointment.specialty}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-slate-800">{appointment.date}</p>
+                      <p className="text-sm text-slate-600">{appointment.time}</p>
+                    </div>
                   </div>
-                  <h4 className="font-semibold text-slate-800 mb-1">Find Hospitals</h4>
-                  <p className="text-sm text-slate-600">Locate nearby healthcare facilities</p>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleEmergency}
-                  className="glass-card p-6 text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Phone className="text-red-500" size={24} />
-                  </div>
-                  <h4 className="font-semibold text-slate-800 mb-1">Emergency</h4>
-                  <p className="text-sm text-slate-600">Call 108 - Emergency services</p>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleSectionChange("ai")}
-                  className="glass-card p-6 text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Lightbulb className="text-green-600" size={24} />
-                  </div>
-                  <h4 className="font-semibold text-slate-800 mb-1">Health Tips</h4>
-                  <p className="text-sm text-slate-600">AI-powered recommendations</p>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleSectionChange("appointments")}
-                  className="glass-card p-6 text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Calendar className="text-purple-500" size={24} />
-                  </div>
-                  <h4 className="font-semibold text-slate-800 mb-1">Appointments</h4>
-                  <p className="text-sm text-slate-600">Schedule your next visit</p>
-                </motion.button>
+                ))}
               </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
 
         {activeSection === "appointments" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-8"
+            className="glass-card p-6 rounded-2xl"
           >
             <h2 className="text-2xl font-bold text-slate-800 mb-4">Appointments</h2>
-            <p className="text-slate-600 mb-6">No appointments yet</p>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-              Book Appointment (coming soon)
-            </Button>
+            <p className="text-slate-600">Manage your medical appointments here.</p>
           </motion.div>
         )}
 
         {activeSection === "hospitals" && (
-          <HospitalFinderSimple />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <HospitalFinderSimple />
+          </motion.div>
         )}
 
         {activeSection === "ai" && (
-          <AIConsultation userCoords={userCoords} />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <AIConsultation userCoords={userCoords} />
+          </motion.div>
         )}
 
         {activeSection === "profile" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-8"
+            className="glass-card p-6 rounded-2xl"
           >
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Health Profile</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Age</label>
-                <input 
-                  type="number" 
-                  placeholder="Enter your age"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
-                    profile.age = e.target.value;
-                    localStorage.setItem('healthProfile', JSON.stringify(profile));
-                  }}
-                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').age || ''}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Gender</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
-                    profile.gender = e.target.value;
-                    localStorage.setItem('healthProfile', JSON.stringify(profile));
-                  }}
-                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').gender || ''}
-                >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Weight (kg)</label>
-                <input 
-                  type="number" 
-                  placeholder="Enter your weight"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
-                    profile.weight = e.target.value;
-                    localStorage.setItem('healthProfile', JSON.stringify(profile));
-                  }}
-                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').weight || ''}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Activity Level</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
-                    profile.activityLevel = e.target.value;
-                    localStorage.setItem('healthProfile', JSON.stringify(profile));
-                  }}
-                  defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').activityLevel || 'moderate'}
-                >
-                  <option value="sedentary">Sedentary</option>
-                  <option value="light">Light Activity</option>
-                  <option value="moderate">Moderate Activity</option>
-                  <option value="active">Very Active</option>
-                </select>
-              </div>
-            </div>
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Health Conditions</label>
-              <textarea 
-                placeholder="Any chronic conditions, allergies, or medications (optional)"
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                onChange={(e) => {
-                  const profile = JSON.parse(localStorage.getItem('healthProfile') || '{}');
-                  profile.healthConditions = e.target.value;
-                  localStorage.setItem('healthProfile', JSON.stringify(profile));
-                }}
-                defaultValue={JSON.parse(localStorage.getItem('healthProfile') || '{}').healthConditions || ''}
-              />
-            </div>
-            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-700">✓ Profile saved automatically. Go to AI Consultation to generate your personalized health plan.</p>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Health Profile</h2>
+            <p className="text-slate-600">View and manage your health profile information.</p>
           </motion.div>
         )}
 
@@ -565,14 +447,10 @@ export const CitizenDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-8"
+            className="glass-card p-6 rounded-2xl"
           >
             <h2 className="text-2xl font-bold text-slate-800 mb-4">Notifications</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-slate-600">No new notifications</p>
-              </div>
-            </div>
+            <p className="text-slate-600">Stay updated with your health notifications.</p>
           </motion.div>
         )}
 
@@ -580,24 +458,27 @@ export const CitizenDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-8"
+            className="glass-card p-6 rounded-2xl"
           >
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Settings</h2>
-            <div className="space-y-6">
-              <div className="p-6 bg-slate-50 rounded-xl">
-                <h3 className="font-semibold text-slate-800 mb-2">Account Information</h3>
-                <p className="text-sm text-slate-600 mb-1">Email: citizen@test.com</p>
-                <p className="text-sm text-slate-600">Role: Citizen</p>
-              </div>
-              <Button 
-                onClick={() => navigate("/login")}
-                variant="destructive"
-              >
-                Logout
-              </Button>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Settings</h2>
+            <p className="text-slate-600">Customize your dashboard preferences.</p>
           </motion.div>
         )}
+
+        {/* Emergency Button */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6 }}
+          className="fixed bottom-6 right-6"
+        >
+          <Button
+            onClick={handleEmergency}
+            className="bg-red-600 hover:bg-red-700 text-white rounded-full w-16 h-16 shadow-lg"
+          >
+            <Phone size={24} />
+          </Button>
+        </motion.div>
       </main>
 
       <FloatingChatbot />
