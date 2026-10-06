@@ -7,7 +7,7 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: { DEFAULT: "1rem", sm: "1.5rem", lg: "2rem" },
       screens: {
         "2xl": "1400px",
       },
@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Figtree', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -50,6 +51,8 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         healthcare: {
           blue: "hsl(var(--healthcare-blue))",
           green: "hsl(var(--healthcare-green))",

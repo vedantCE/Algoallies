@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingDown, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StatCardProps {
   title: string;
@@ -14,45 +15,38 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ title, value, subtitle, icon: Icon, trend, delay = 0 }: StatCardProps) => {
+  const TrendIcon = trend?.isPositive ? TrendingUp : TrendingDown;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="glass-card p-6 cursor-pointer group"
+      transition={{ delay, duration: 0.3, ease: "easeOut" }}
+      className="glass-card p-5"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl healthcare-gradient flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-          <Icon className="text-primary-foreground" size={24} />
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <Icon size={22} aria-hidden="true" />
         </div>
         {trend && (
           <span
-            className={`text-sm font-medium px-2 py-1 rounded-full ${
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
               trend.isPositive
-                ? "bg-healthcare-light-green text-healthcare-green"
+                ? "bg-healthcare-light-green text-success"
                 : "bg-destructive/10 text-destructive"
-            }`}
+            )}
           >
-            {trend.isPositive ? "+" : ""}{trend.value}%
+            <TrendIcon size={14} aria-hidden="true" />
+            <span className="sr-only">{trend.isPositive ? "Up" : "Down"}</span>
+            {trend.value}%
           </span>
         )}
       </div>
 
-      <motion.h3
-        initial={{ scale: 0.5 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: delay + 0.1, type: "spring" }}
-        className="text-3xl font-bold text-foreground mb-1"
-      >
-        {value}
-      </motion.h3>
-      
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      {subtitle && (
-        <p className="text-xs text-muted-foreground/70 mt-1">{subtitle}</p>
-      )}
+      <p className="font-display text-3xl font-bold tabular-nums text-foreground">{value}</p>
+      <p className="mt-1 text-sm font-medium text-foreground/80">{title}</p>
+      {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
     </motion.div>
   );
 };
-  

@@ -1,5 +1,5 @@
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
 
 def generate_hospital_response(query: str):
@@ -64,10 +64,7 @@ RULES:
 4. Cold (<15°C) = respiratory infections
 5. Return ONLY valid JSON, no extra text"""
 
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        api_key=os.getenv("GOOGLE_API_KEY")
-    )
+    model = get_llm()
 
     messages = [
         SystemMessage(content=system_prompt),

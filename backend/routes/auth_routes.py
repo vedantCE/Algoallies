@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import logging
 from config.database import db_manager, MOCK_USERS
+from utils.security import hash_password, verify_password, is_hashed
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -25,16 +26,21 @@ def login(data: LoginModel):
         users_collection = db_manager.get_collection("users")
         
         if users_collection is not None:
-            user = users_collection.find_one({
-                "email": data.email,
-                "password": data.password
-            })
+            user = users_collection.find_one({"email": data.email})
         else:
             # Fallback to mock users
-            user = next((u for u in MOCK_USERS if u["email"] == data.email and u["password"] == data.password), None)
+            user = next((u for u in MOCK_USERS if u["email"] == data.email), None)
         
-        if not user:
+        if not user or not verify_password(data.password, user.get("password")):
             return {"success": False, "message": "Invalid email or password"}
+        
+        # Upgrade legacy plain-text passwords to a bcrypt hash on successful login
+        if not is_hashed(user.get("password")):
+            new_hash = hash_password(data.password)
+            if users_collection is not None:
+                users_collection.update_one({"_id": user["_id"]}, {"$set": {"password": new_hash}})
+            else:
+                user["password"] = new_hash
         
         return {
             "success": True,
@@ -54,7 +60,7 @@ def signup(data: SignupModel):
         new_user = {
             "name": data.name,
             "email": data.email,
-            "password": data.password,
+            "password": hash_password(data.password),
             "role": "citizen"
         }
         

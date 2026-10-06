@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
-  Users, UserCheck, Package, FileText, Settings, 
-  Activity, Thermometer, Wind, Cloud, Droplets,
-  CheckCircle, XCircle, Clock, RefreshCw, LogOut
+  Users, UserCheck, Package, FileText, Settings, LayoutDashboard,
+  Activity, Wind, Cloud, Droplets, TrendingUp, Bot, BedDouble, Siren,
+  CheckCircle, XCircle, Clock, RefreshCw, MapPin, AlertTriangle, Gauge,
 } from "lucide-react";
-// Removed DashboardSidebar import - using internal sidebar navigation
 import { FloatingChatbot } from "@/components/FloatingChatbot";
+import { DashboardShell, DashboardNavItem } from "@/components/DashboardShell";
+import { EmptyState } from "@/components/EmptyState";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSectionParam } from "@/hooks/use-section-param";
+import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/StatCard";
 import { SurgePredictionDashboard } from "@/components/SurgePredictionDashboard";
 
@@ -21,15 +25,67 @@ import {
 // Hospital stats for overview
 const hospitalStats = [
   { title: "Total Patients", value: "1,247", subtitle: "Currently admitted", icon: Users, trend: { value: 12, isPositive: true } },
-  { title: "Available Beds", value: "156", subtitle: "Out of 500 total", icon: UserCheck, trend: { value: 8, isPositive: true } },
+  { title: "Available Beds", value: "156", subtitle: "Out of 500 total", icon: BedDouble, trend: { value: 8, isPositive: true } },
   { title: "Staff On Duty", value: "89", subtitle: "Doctors & nurses", icon: UserCheck, trend: { value: 5, isPositive: true } },
-  { title: "Emergency Cases", value: "23", subtitle: "Today", icon: Activity, trend: { value: 3, isPositive: false } },
+  { title: "Emergency Cases", value: "23", subtitle: "Today", icon: Siren, trend: { value: 3, isPositive: false } },
 ];
 
-type SectionType = "overview" | "patients" | "staff" | "inventory" | "reports" | "settings" | "surge" | "cities" | "agent";
+const SECTIONS = ["overview", "patients", "staff", "inventory", "surge", "agent", "reports", "settings"] as const;
+type SectionType = (typeof SECTIONS)[number];
+
+const navItems: DashboardNavItem[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "patients", label: "Patients", icon: Users },
+  { id: "staff", label: "Staff", icon: UserCheck },
+  { id: "inventory", label: "Inventory", icon: Package },
+  { id: "surge", label: "Surge Prediction", icon: TrendingUp },
+  { id: "agent", label: "AI Agent", icon: Bot },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "settings", label: "Settings", icon: Settings },
+];
+
+const sectionCopy: Record<SectionType, { title: string; description: string }> = {
+  overview: { title: "Hospital overview", description: "Live operations, weather risk and capacity at a glance." },
+  patients: { title: "Patients", description: "Admissions, discharges and the emergency queue." },
+  staff: { title: "Staff", description: "Who's on duty and AI staffing recommendations." },
+  inventory: { title: "Inventory", description: "Review AI-recommended stock levels." },
+  surge: { title: "Surge prediction", description: "AI-powered patient surge forecasting." },
+  agent: { title: "AI agent", description: "Autonomous monitoring and recommended actions." },
+  reports: { title: "Reports", description: "History of approved and declined recommendations." },
+  settings: { title: "Settings", description: "Hospital profile and alert thresholds." },
+};
+
+const statusBadge: Record<string, string> = {
+  approved: "bg-emerald-100 text-emerald-800",
+  declined: "bg-red-100 text-red-800",
+  review: "bg-amber-100 text-amber-900",
+  high: "bg-red-100 text-red-800",
+  medium: "bg-amber-100 text-amber-900",
+  low: "bg-emerald-100 text-emerald-800",
+};
+
+const Badge = ({ value }: { value?: string }) => (
+  <span
+    className={cn(
+      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
+      statusBadge[value ?? ""] ?? "bg-muted text-muted-foreground"
+    )}
+  >
+    {value || "pending"}
+  </span>
+);
+
+const ListSkeleton = ({ rows = 3 }: { rows?: number }) => (
+  <div className="space-y-3" aria-label="Loading">
+    {Array.from({ length: rows }).map((_, i) => (
+      <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+    ))}
+  </div>
+);
 
 export const HospitalDashboard = () => {
-  const [selectedSection, setSelectedSection] = useState<SectionType>("overview");
+  const [selectedSection, setSelectedSection] = useSectionParam(SECTIONS, "overview");
+  const [sectionLoading, setSectionLoading] = useState(false);
   
   // Weather data state - reusing citizen dashboard logic with geolocation
   const [weather, setWeather] = useState<any>(null);
@@ -122,6 +178,7 @@ export const HospitalDashboard = () => {
     if (!userCoords) return; // Wait for coordinates
     
     const fetchSectionData = async () => {
+      setSectionLoading(true);
       try {
         switch (selectedSection) {
           case "staff":
@@ -150,6 +207,8 @@ export const HospitalDashboard = () => {
         }
       } catch (error) {
         console.error(`Error fetching ${selectedSection} data:`, error);
+      } finally {
+        setSectionLoading(false);
       }
     };
 
@@ -182,456 +241,355 @@ export const HospitalDashboard = () => {
     }
   };
 
-  // Sidebar navigation items with advanced SurgeSense features
-  const sidebarItems = [
-    { id: "overview", label: "Overview", icon: Activity },
-    { id: "patients", label: "Patients", icon: Users },
-    { id: "staff", label: "Staff", icon: UserCheck },
-    { id: "inventory", label: "Inventory", icon: Package },
-    { id: "surge", label: "Surge Prediction", icon: Activity },
-    { id: "agent", label: "AI Agent", icon: Activity },
+  // Weather widget with AQI display
+  const WeatherWidget = () => {
+    const aqiTone =
+      weather?.aqi > 150 ? "text-red-700 bg-red-100" : weather?.aqi > 100 ? "text-amber-900 bg-amber-100" : "text-emerald-800 bg-emerald-100";
+    const alert =
+      weather?.aqi > 150
+        ? { tone: "border-red-200 bg-red-50 text-red-900", text: "High AQI — expect an increase in respiratory cases." }
+        : weather?.temperature > 32
+          ? { tone: "border-orange-200 bg-orange-50 text-orange-900", text: "High temperature — monitor for heat-related cases." }
+          : { tone: "border-primary/15 bg-accent text-accent-foreground", text: "Normal conditions — standard operations." };
 
-    { id: "reports", label: "Reports", icon: FileText },
-    { id: "settings", label: "Settings", icon: Settings },
-  ];
+    return (
+      <section className="glass-card p-6" aria-labelledby="ops-weather-heading" aria-live="polite" aria-busy={weatherLoading}>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 id="ops-weather-heading" className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <Cloud className="text-primary" size={22} aria-hidden="true" />
+            Weather &amp; operations risk
+          </h2>
+          {weather && !weatherLoading && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              <MapPin size={12} aria-hidden="true" />
+              {weather.city} · Live
+            </span>
+          )}
+        </div>
 
-  // Weather widget component - reused from citizen dashboard with AQI display
-  const WeatherWidget = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-6 mb-8 overflow-hidden relative"
-    >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-      
-      <div className="relative z-10">
         {weatherLoading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading live weather...</p>
+          <div className="space-y-4">
+            <div className="h-12 w-28 animate-pulse rounded-lg bg-muted" />
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
           </div>
         ) : weatherError ? (
-          <div className="text-center py-8">
-            <p className="text-red-600 text-sm">Unable to fetch live weather. Please try again.</p>
-          </div>
+          <p className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-foreground">
+            Unable to fetch live weather. Refresh the page to try again.
+          </p>
         ) : weather ? (
           <>
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-foreground">Weather & Health</h3>
-                <p className="text-sm text-muted-foreground">📍 {weather.city} - Live Data</p>
+                <p className="font-display text-5xl font-bold tabular-nums text-foreground">
+                  {Math.round(weather.temperature)}°<span className="text-2xl text-muted-foreground">C</span>
+                </p>
+                <p className="mt-1 capitalize text-muted-foreground">{weather.description}</p>
               </div>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              >
-                <Activity className="text-yellow-500" size={40} />
-              </motion.div>
-            </div>
-
-            <div className="flex items-center gap-2 mb-6">
-              <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                {Math.round(weather.temperature)}°
-              </span>
-              <span className="text-xl text-muted-foreground">C</span>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Cloud className="text-muted-foreground" size={18} />
-                <span className="text-sm text-muted-foreground capitalize">{weather.description}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Droplets className="text-blue-600" size={18} />
-                <span className="text-sm text-muted-foreground">{weather.humidity}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Wind className="text-muted-foreground" size={18} />
-                <span className="text-sm text-muted-foreground">{weather.windSpeed} km/h</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Activity className={`${weather.aqi > 150 ? 'text-red-500' : weather.aqi > 100 ? 'text-yellow-500' : 'text-green-500'}`} size={18} />
-                <span className="text-sm text-muted-foreground">AQI {weather.aqi || 'N/A'}</span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 rounded-xl">
-              <div className="flex items-start gap-3">
-                <Thermometer className="text-green-600 shrink-0 mt-0.5" size={20} />
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Hospital Operations Alert</p>
-                  <p className="text-sm text-muted-foreground">
-                    Current conditions in {weather.city}: {Math.round(weather.temperature)}°C, {weather.humidity}% humidity, AQI {weather.aqi} ({weather.aqi_category}). 
-                    {weather.aqi > 150 ? 'High AQI - expect respiratory cases.' : weather.temperature > 32 ? 'High temperature - monitor heat-related cases.' : 'Normal conditions - standard operations.'}
-                  </p>
+              <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Droplets size={18} className="text-primary" aria-hidden="true" />
+                  <dt className="sr-only">Humidity</dt>
+                  <dd><span className="font-semibold text-foreground">{weather.humidity}%</span> humidity</dd>
                 </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Wind size={18} className="text-primary" aria-hidden="true" />
+                  <dt className="sr-only">Wind speed</dt>
+                  <dd><span className="font-semibold text-foreground">{weather.windSpeed}</span> km/h</dd>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gauge size={18} className="text-primary" aria-hidden="true" />
+                  <dt className="sr-only">Air quality index</dt>
+                  <dd className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", aqiTone)}>
+                    AQI {weather.aqi ?? "N/A"}{weather.aqi_category ? ` · ${weather.aqi_category}` : ""}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <div className={cn("flex items-start gap-3 rounded-xl border p-4", alert.tone)}>
+              <AlertTriangle size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-semibold">Operations alert</p>
+                <p className="text-sm">{alert.text}</p>
               </div>
             </div>
           </>
         ) : null}
-      </div>
-    </motion.div>
-  );
+      </section>
+    );
+  };
 
   // Section content components
   const OverviewSection = () => (
-    <div className="space-y-8">
-      <WeatherWidget />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-6">
+      <section aria-label="Key hospital metrics" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {hospitalStats.map((stat, index) => (
-          <StatCard key={stat.title} {...stat} delay={index * 0.1} />
+          <StatCard key={stat.title} {...stat} delay={index * 0.05} />
         ))}
-      </div>
+      </section>
+      <WeatherWidget />
     </div>
   );
 
   const PatientsSection = () => (
-    <div className="glass-card p-6">
-      <h2 className="text-xl font-semibold mb-4">Patient Management</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-medium text-blue-900 mb-2">Admitted Patients</h3>
-          <p className="text-2xl font-bold text-blue-700">1,247</p>
-          <p className="text-sm text-blue-600">+12% from yesterday</p>
-        </div>
-        <div className="p-4 bg-green-50 rounded-lg">
-          <h3 className="font-medium text-green-900 mb-2">Discharged Today</h3>
-          <p className="text-2xl font-bold text-green-700">89</p>
-          <p className="text-sm text-green-600">Normal discharge rate</p>
-        </div>
-        <div className="p-4 bg-yellow-50 rounded-lg">
-          <h3 className="font-medium text-yellow-900 mb-2">Pending Admissions</h3>
-          <p className="text-2xl font-bold text-yellow-700">23</p>
-          <p className="text-sm text-yellow-600">Emergency queue</p>
-        </div>
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Admitted patients", value: "1,247", note: "+12% from yesterday", icon: Users },
+          { label: "Discharged today", value: "89", note: "Normal discharge rate", icon: CheckCircle },
+          { label: "Pending admissions", value: "23", note: "Emergency queue", icon: Clock },
+        ].map((item) => (
+          <div key={item.label} className="glass-card p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+              <item.icon size={20} aria-hidden="true" />
+            </div>
+            <p className="font-display text-2xl font-bold tabular-nums text-foreground">{item.value}</p>
+            <p className="text-sm font-medium text-foreground/80">{item.label}</p>
+            <p className="text-sm text-muted-foreground">{item.note}</p>
+          </div>
+        ))}
       </div>
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-4">Recent Admissions</h3>
-        <div className="space-y-3">
+      <section className="glass-card p-6" aria-labelledby="recent-admissions">
+        <h2 id="recent-admissions" className="mb-4 text-lg font-semibold text-foreground">Recent admissions</h2>
+        <ul className="divide-y divide-border">
           {[
             { name: "Patient #2847", condition: "Respiratory distress", time: "2 hours ago", priority: "high" },
             { name: "Patient #2848", condition: "Heat exhaustion", time: "3 hours ago", priority: "medium" },
             { name: "Patient #2849", condition: "Routine checkup", time: "4 hours ago", priority: "low" },
-          ].map((patient, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
-              <div>
-                <p className="font-medium">{patient.name}</p>
+          ].map((patient) => (
+            <li key={patient.name} className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">{patient.name}</p>
                 <p className="text-sm text-muted-foreground">{patient.condition}</p>
               </div>
-              <div className="text-right">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  patient.priority === "high" ? "bg-red-100 text-red-700" :
-                  patient.priority === "medium" ? "bg-yellow-100 text-yellow-700" :
-                  "bg-green-100 text-green-700"
-                }`}>
-                  {patient.priority}
-                </span>
-                <p className="text-xs text-muted-foreground mt-1">{patient.time}</p>
+              <div className="shrink-0 text-right">
+                <Badge value={patient.priority} />
+                <p className="mt-1 text-xs text-muted-foreground">{patient.time}</p>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
+      </section>
     </div>
   );
 
   const StaffSection = () => (
-    <div className="space-y-6">
-      {/* Available Staff */}
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-4">Available Staff</h3>
-        <div className="space-y-3">
-          {staff.map((member, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
-              <div>
-                <p className="font-medium">{member.name}</p>
-                <p className="text-sm text-muted-foreground">{member.role} - {member.department}</p>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                member.status === "on_duty" 
-                  ? "bg-green-100 text-green-700" 
-                  : "bg-gray-100 text-gray-600"
-              }`}>
-                {member.status === "on_duty" ? "On Duty" : "Off Duty"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* AI Staff Recommendations */}
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-4">AI Recommended Staffing</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Based on live weather conditions and surge prediction
-        </p>
-        <div className="space-y-3">
-          {staffRecommendations.map((rec, index) => (
-            <div key={index} className={`p-4 rounded-lg border ${
-              rec.priority === "high" ? "bg-red-50 border-red-200" :
-              rec.priority === "medium" ? "bg-yellow-50 border-yellow-200" :
-              "bg-blue-50 border-blue-200"
-            }`}>
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium">{rec.role} - {rec.department}</h4>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  rec.priority === "high" ? "bg-red-100 text-red-700" :
-                  rec.priority === "medium" ? "bg-yellow-100 text-yellow-700" :
-                  "bg-blue-100 text-blue-700"
-                }`}>
-                  {rec.priority}
+    <div className="grid gap-6 xl:grid-cols-2">
+      <section className="glass-card p-6" aria-labelledby="staff-available">
+        <h2 id="staff-available" className="mb-4 text-lg font-semibold text-foreground">Available staff</h2>
+        {sectionLoading && staff.length === 0 ? (
+          <ListSkeleton />
+        ) : staff.length === 0 ? (
+          <EmptyState icon={UserCheck} title="No staff data" description="Staff records will appear here once available." className="py-8" />
+        ) : (
+          <ul className="divide-y divide-border">
+            {staff.map((member, index) => (
+              <li key={index} className="flex items-center justify-between gap-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{member.name}</p>
+                  <p className="text-sm text-muted-foreground">{member.role} · {member.department}</p>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                    member.status === "on_duty" ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <span className={cn("h-1.5 w-1.5 rounded-full", member.status === "on_duty" ? "bg-emerald-600" : "bg-muted-foreground")} aria-hidden="true" />
+                  {member.status === "on_duty" ? "On duty" : "Off duty"}
                 </span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-2">{rec.reason}</p>
-              <p className="text-sm">
-                Current: {rec.current_count} → Recommended: {rec.recommended_count}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="glass-card p-6" aria-labelledby="staff-ai">
+        <h2 id="staff-ai" className="text-lg font-semibold text-foreground">AI recommended staffing</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Based on live weather conditions and surge prediction</p>
+        {sectionLoading && staffRecommendations.length === 0 ? (
+          <ListSkeleton />
+        ) : staffRecommendations.length === 0 ? (
+          <EmptyState icon={Bot} title="No recommendations right now" description="Staffing looks adequate for current conditions." className="py-8" />
+        ) : (
+          <ul className="space-y-3">
+            {staffRecommendations.map((rec, index) => (
+              <li key={index} className="rounded-xl border border-border bg-muted/30 p-4">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <h3 className="font-medium text-foreground">{rec.role} · {rec.department}</h3>
+                  <Badge value={rec.priority} />
+                </div>
+                <p className="mb-2 text-sm text-muted-foreground">{rec.reason}</p>
+                <p className="text-sm tabular-nums text-foreground">
+                  Current <span className="font-semibold">{rec.current_count}</span>
+                  <span className="mx-2 text-muted-foreground" aria-hidden="true">→</span>
+                  <span className="sr-only">, </span>
+                  Recommended <span className="font-semibold text-primary">{rec.recommended_count}</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 
+  const inventoryActions = [
+    { status: "approved", label: "Approve", icon: CheckCircle, className: "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800" },
+    { status: "review", label: "Mark for review", icon: Clock, className: "text-amber-700 hover:bg-amber-50 hover:text-amber-800" },
+    { status: "declined", label: "Decline", icon: XCircle, className: "text-red-700 hover:bg-red-50 hover:text-red-800" },
+  ];
+
   const InventorySection = () => (
-    <div className="glass-card p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Inventory Management</h3>
-        <Button 
-          onClick={handleRecalculateInventory}
-          disabled={inventoryLoading}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={inventoryLoading ? "animate-spin" : ""} size={16} />
-          Recalculate AI Recommendations
+    <section className="glass-card p-6" aria-labelledby="inventory-heading">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 id="inventory-heading" className="text-lg font-semibold text-foreground">Stock recommendations</h2>
+        <Button onClick={handleRecalculateInventory} disabled={inventoryLoading} variant="outline">
+          <RefreshCw className={inventoryLoading ? "animate-spin" : ""} aria-hidden="true" />
+          {inventoryLoading ? "Recalculating…" : "Recalculate with AI"}
         </Button>
       </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left p-3">Item Name</th>
-              <th className="text-left p-3">Available</th>
-              <th className="text-left p-3">AI Recommended</th>
-              <th className="text-left p-3">Status</th>
-              <th className="text-left p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventory.map((item, index) => (
-              <tr key={item._id || index} className="border-b">
-                <td className="p-3">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.category}</p>
-                  </div>
-                </td>
-                <td className="p-3">{item.available_quantity} {item.unit}</td>
-                <td className="p-3 font-medium">{item.ai_recommended_quantity} {item.unit}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    item.status === "approved" ? "bg-green-100 text-green-700" :
-                    item.status === "declined" ? "bg-red-100 text-red-700" :
-                    item.status === "review" ? "bg-yellow-100 text-yellow-700" :
-                    "bg-gray-100 text-gray-600"
-                  }`}>
-                    {item.status || "pending"}
-                  </span>
-                </td>
-                <td className="p-3">
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleInventoryStatusUpdate(item._id, "approved")}
-                      className="text-green-600 border-green-600 hover:bg-green-50"
-                    >
-                      <CheckCircle size={14} />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleInventoryStatusUpdate(item._id, "review")}
-                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
-                    >
-                      <Clock size={14} />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleInventoryStatusUpdate(item._id, "declined")}
-                      className="text-red-600 border-red-600 hover:bg-red-50"
-                    >
-                      <XCircle size={14} />
-                    </Button>
-                  </div>
-                </td>
+
+      {sectionLoading && inventory.length === 0 ? (
+        <ListSkeleton rows={4} />
+      ) : inventory.length === 0 ? (
+        <EmptyState icon={Package} title="No inventory items" description="Inventory items and AI recommendations will appear here." />
+      ) : (
+        <div className="-mx-6 overflow-x-auto px-6">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th scope="col" className="py-3 pr-4">Item</th>
+                <th scope="col" className="py-3 pr-4 text-right">Available</th>
+                <th scope="col" className="py-3 pr-4 text-right">AI recommended</th>
+                <th scope="col" className="py-3 pr-4">Status</th>
+                <th scope="col" className="py-3 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {inventory.map((item, index) => (
+                <tr key={item._id || index} className="transition-colors hover:bg-muted/40">
+                  <td className="py-3 pr-4">
+                    <p className="font-medium text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.category}</p>
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums">{item.available_quantity} {item.unit}</td>
+                  <td className="py-3 pr-4 text-right font-semibold tabular-nums">{item.ai_recommended_quantity} {item.unit}</td>
+                  <td className="py-3 pr-4"><Badge value={item.status} /></td>
+                  <td className="py-3">
+                    <div className="flex justify-end gap-1">
+                      {inventoryActions.map((action) => (
+                        <Tooltip key={action.status}>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`${action.label} ${item.name}`}
+                              aria-pressed={item.status === action.status}
+                              onClick={() => handleInventoryStatusUpdate(item._id, action.status)}
+                              className={cn("h-10 w-10", action.className, item.status === action.status && "bg-muted")}
+                            >
+                              <action.icon aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{action.label}</TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 
   const ReportsSection = () => (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Decision History</h3>
-      <div className="space-y-3">
-        {decisions.map((decision, index) => (
-          <div key={index} className="p-4 bg-accent/30 rounded-lg">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="font-medium">{decision.item_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {decision.type === "inventory" ? "Inventory" : "Staff"} Decision
-                </p>
+    <section className="glass-card p-6" aria-labelledby="reports-heading">
+      <h2 id="reports-heading" className="mb-4 text-lg font-semibold text-foreground">Decision history</h2>
+      {sectionLoading && decisions.length === 0 ? (
+        <ListSkeleton />
+      ) : decisions.length === 0 ? (
+        <EmptyState icon={FileText} title="No decisions yet" description="Approve or decline inventory recommendations to build a history." action={
+          <Button variant="outline" onClick={() => setSelectedSection("inventory")}>
+            <Package aria-hidden="true" />
+            Go to inventory
+          </Button>
+        } />
+      ) : (
+        <ul className="divide-y divide-border">
+          {decisions.map((decision, index) => (
+            <li key={index} className="py-4">
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-foreground">{decision.item_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {decision.type === "inventory" ? "Inventory" : "Staff"} decision
+                  </p>
+                </div>
+                <Badge value={decision.final_decision} />
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                decision.final_decision === "approved" ? "bg-green-100 text-green-700" :
-                decision.final_decision === "declined" ? "bg-red-100 text-red-700" :
-                "bg-yellow-100 text-yellow-700"
-              }`}>
-                {decision.final_decision}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">
-              Recommendation: {decision.original_recommendation}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(decision.timestamp).toLocaleString()}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+              <p className="text-sm text-muted-foreground">Recommendation: {decision.original_recommendation}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                <time dateTime={decision.timestamp}>{new Date(decision.timestamp).toLocaleString()}</time>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 
   const SettingsSection = () => (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Hospital Settings</h3>
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm font-medium">Hospital Name</label>
-          <p className="text-muted-foreground">{settings.hospital_name || "SurgeSense Medical Center"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Location</label>
-          <p className="text-muted-foreground">{settings.city || "Mumbai"}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium">AQI Thresholds</label>
-          <p className="text-muted-foreground">
-            High: {settings.aqi_threshold_high || 150}, Medium: {settings.aqi_threshold_medium || 100}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Temperature Thresholds</label>
-          <p className="text-muted-foreground">
-            High: {settings.temperature_threshold_high || 32}°C, Low: {settings.temperature_threshold_low || 15}°C
-          </p>
-        </div>
-      </div>
-    </div>
+    <section className="glass-card max-w-3xl p-6" aria-labelledby="settings-heading">
+      <h2 id="settings-heading" className="mb-4 text-lg font-semibold text-foreground">Hospital settings</h2>
+      <dl className="divide-y divide-border">
+        {[
+          ["Hospital name", settings.hospital_name || "SurgeSense Medical Center"],
+          ["Location", settings.city || "Mumbai"],
+          ["AQI thresholds", `High ${settings.aqi_threshold_high || 150} · Medium ${settings.aqi_threshold_medium || 100}`],
+          ["Temperature thresholds", `High ${settings.temperature_threshold_high || 32}°C · Low ${settings.temperature_threshold_low || 15}°C`],
+        ].map(([label, value]) => (
+          <div key={label} className="grid gap-1 py-3 sm:grid-cols-3 sm:gap-4">
+            <dt className="text-sm font-medium text-foreground">{label}</dt>
+            <dd className="text-sm text-muted-foreground sm:col-span-2">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 
+  const copy = sectionCopy[selectedSection];
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Custom Hospital Sidebar */}
-      <motion.aside
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="fixed left-0 top-0 h-full w-64 glass-card rounded-none border-r border-border/30 p-6 flex flex-col z-40"
+    <DashboardShell
+      brand="SurgeSense"
+      roleLabel="Hospital"
+      items={navItems}
+      active={selectedSection}
+      onSelect={(id) => setSelectedSection(id as SectionType)}
+      title={copy.title}
+      description={copy.description}
+    >
+      <motion.div
+        key={selectedSection}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 healthcare-gradient rounded-xl flex items-center justify-center">
-            <Activity className="text-primary-foreground" size={24} />
-          </div>
-          <span className="font-bold text-xl healthcare-gradient-text">SurgeSense</span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-2">
-          {sidebarItems.map((item, index) => {
-            const isActive = selectedSection === item.id;
-            const Icon = item.icon;
-
-            return (
-              <motion.button
-                key={item.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => setSelectedSection(item.id as SectionType)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "healthcare-gradient text-primary-foreground shadow-lg"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </motion.button>
-            );
-          })}
-        </nav>
-
-        {/* Logout */}
-        <button
-          onClick={() => window.location.href = '/login'}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
-        >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
-        </button>
-      </motion.aside>
-      
-      <main className="ml-64 flex-1 p-4 sm:p-8 w-full max-w-[calc(100vw-16rem)] overflow-x-hidden">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Hospital <span className="healthcare-gradient-text">Dashboard</span>
-          </h1>
-          <p className="text-muted-foreground">AI-powered hospital operations management</p>
-        </motion.div>
-
-
-
-        {/* Section indicator - shows current section */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Current Section:</span>
-            <span className="font-medium text-foreground capitalize">{selectedSection}</span>
-          </div>
-        </div>
-
-        {/* Dynamic Section Content */}
-        <motion.div
-          key={selectedSection}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {selectedSection === "overview" && <OverviewSection />}
-          {selectedSection === "patients" && <PatientsSection />}
-          {selectedSection === "staff" && <StaffSection />}
-          {selectedSection === "inventory" && <InventorySection />}
-          {selectedSection === "surge" && <SurgePredictionDashboard userCoords={userCoords} />}
-          {selectedSection === "agent" && <AutonomousAgentPanel />}
-
-          {selectedSection === "reports" && <ReportsSection />}
-          {selectedSection === "settings" && <SettingsSection />}
-        </motion.div>
-      </main>
+        {selectedSection === "overview" && <OverviewSection />}
+        {selectedSection === "patients" && <PatientsSection />}
+        {selectedSection === "staff" && <StaffSection />}
+        {selectedSection === "inventory" && <InventorySection />}
+        {selectedSection === "surge" && <SurgePredictionDashboard userCoords={userCoords} />}
+        {selectedSection === "agent" && <AutonomousAgentPanel />}
+        {selectedSection === "reports" && <ReportsSection />}
+        {selectedSection === "settings" && <SettingsSection />}
+      </motion.div>
 
       <FloatingChatbot />
-    </div>
+    </DashboardShell>
   );
 };
 

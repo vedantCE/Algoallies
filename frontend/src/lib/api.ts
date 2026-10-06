@@ -22,7 +22,7 @@ export const getNearbyHospitals = () =>
 export const login = (email: string, password: string) =>
   api.post("/login", { email, password });
 
-export const signup = (data: { email: string; password: string; role: string }) =>
+export const signup = (data: { name?: string; email: string; password: string; role: string }) =>
   api.post("/signup", data);
 
 // Citizen AI Plan

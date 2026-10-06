@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
 
 load_dotenv()
@@ -54,14 +54,9 @@ def generate_landing_response(
     ]
     is_weather_question = any(keyword in message_lower for keyword in weather_keywords)
 
-    print("Calling Gemini Flash")
+    print("Calling LLM")
 
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        temperature=0.6,
-        convert_system_message_to_human=True,
-    )
+    model = get_llm(temperature=0.6)
 
     # 3️⃣ Very strict system rule: ALWAYS short answers
     system_message = SystemMessage(

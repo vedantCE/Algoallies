@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import LandingPage from "./pages/LandingPage";
 import AboutUs from "./pages/AboutUs";
 import Login from "./pages/Login";
@@ -14,22 +15,25 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/citizen" element={<CitizenDashboard />} />
-          <Route path="/citizen/*" element={<CitizenDashboard />} />
-          <Route path="/hospital" element={<HospitalDashboard />} />
-          <Route path="/hospital/*" element={<HospitalDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    {/* Honour the OS "reduce motion" setting for every framer-motion animation */}
+    <MotionConfig reducedMotion="user">
+      <TooltipProvider delayDuration={200}>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/citizen" element={<CitizenDashboard />} />
+            <Route path="/citizen/*" element={<CitizenDashboard />} />
+            <Route path="/hospital" element={<HospitalDashboard />} />
+            <Route path="/hospital/*" element={<HospitalDashboard />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </MotionConfig>
   </QueryClientProvider>
 );
 

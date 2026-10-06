@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import get_llm
 from langchain_core.messages import SystemMessage, HumanMessage
 
 load_dotenv()
@@ -10,7 +10,7 @@ def generate_citizen_response(user_message: str, weather: dict, return_json: boo
     Generate structured, weather-aware health advice for authenticated citizens
     
     This agent provides comprehensive health guidance with 10 mandatory sections.
-    Uses LangChain's ChatGoogleGenerativeAI wrapper for consistent API handling
+    Uses LangChain chat model (Gemini or Groq, see config/llm.py) for consistent API handling
     and includes emergency symptom detection.
     
     Args:
@@ -36,14 +36,9 @@ def generate_citizen_response(user_message: str, weather: dict, return_json: boo
         print("Citizen Agent: Critical symptoms detected - returning emergency response")
         return "🚨 EMERGENCY: Call emergency services immediately (911). Do not delay medical attention."
     
-    # Initialize ChatGoogleGenerativeAI model for comprehensive health advice
+    # Initialize configured LLM (Gemini/Groq) for comprehensive health advice
     # Temperature 0.7 provides balanced creativity while maintaining medical accuracy
-    model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        temperature=0.7,
-        convert_system_message_to_human=True,
-    )
+    model = get_llm(temperature=0.7)
     
     # SystemMessage defines the citizen agent's structured health advisory behavior
     # This creates a comprehensive health assistant with mandatory 10-section format
@@ -250,7 +245,7 @@ Generate FRESH, VARIED content - avoid generic responses. Include specific quant
     ]
     
     try:
-        print("CitizenAI: invoking Gemini model via LangChain")
+        print("CitizenAI: invoking LLM via LangChain")
         print(f"CitizenAI: User message - {user_message[:100]}...")
         print(f"CitizenAI: Weather context - Temp: {temp}°C, Humidity: {humidity}%, Conditions: {conditions}, AQI: {aqi}")
         print(f"CitizenAI: Focus: {selected_focus}, Schedule: {selected_time}")

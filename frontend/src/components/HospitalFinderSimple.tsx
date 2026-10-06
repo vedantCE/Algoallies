@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Hospital, MapPin, Loader2, AlertCircle, Navigation, RefreshCw } from "lucide-react";
+import { Hospital, MapPin, Loader2, AlertCircle, Navigation, ExternalLink, Pill, Stethoscope, LocateFixed } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 
 interface Facility {
@@ -56,16 +57,16 @@ export const HospitalFinderSimple = () => {
     }
   }, []);
 
-  const getFacilityColor = (type: string) => {
+  const getFacilityStyle = (type: string) => {
     switch (type.toLowerCase()) {
       case "hospital":
-        return "text-blue-600";
+        return { icon: Hospital, tint: "bg-blue-100 text-blue-800" };
       case "clinic":
-        return "text-green-600";
+        return { icon: Stethoscope, tint: "bg-emerald-100 text-emerald-800" };
       case "pharmacy":
-        return "text-orange-600";
+        return { icon: Pill, tint: "bg-orange-100 text-orange-800" };
       default:
-        return "text-gray-600";
+        return { icon: MapPin, tint: "bg-muted text-muted-foreground" };
     }
   };
 
@@ -215,140 +216,131 @@ export const HospitalFinderSimple = () => {
 
   const openInMaps = (lat: number, lon: number, name: string) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}&query_place_id=${encodeURIComponent(name)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="space-y-6">
       {/* Search Section */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Hospital className="text-blue-600" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">Find Hospitals</h2>
-              <p className="text-sm text-slate-600">Locate nearby healthcare facilities</p>
-            </div>
+      <div className="glass-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <LocateFixed size={22} aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Search near your location</h2>
+            <p className="text-sm text-muted-foreground">
+              We'll ask for location access. Results within {radiusKm} km.
+            </p>
           </div>
         </div>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSearchHospitals}
-            disabled={isLoading}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Searching nearby hospitals...
-              </>
-            ) : (
-              <>
-                <Navigation className="mr-2 h-4 w-4" />
-                {hasSearched ? "Search Again" : "Search Nearby Hospitals"}
-              </>
-            )}
-          </Button>
-          
-          {hasSearched && !isLoading && (
-            <Button
-              onClick={handleSearchHospitals}
-              disabled={isLoading}
-              variant="outline"
-              size="icon"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="text-red-500" size={16} />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        )}
+        <Button onClick={handleSearchHospitals} disabled={isLoading} className="h-11 sm:min-w-[200px]">
+          {isLoading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Navigation aria-hidden="true" />}
+          {isLoading ? "Searching…" : hasSearched ? "Search again" : "Search nearby"}
+        </Button>
       </div>
 
-      {/* Results Section */}
-      {hasSearched && !isLoading && (
-        <div className="glass-card p-6">
-          {lastSearched && (
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-slate-600">
-                Last searched: {lastSearched.toLocaleTimeString()}
-              </p>
-            </div>
-          )}
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">
-            Nearby Medical Facilities
-          </h3>
-          
-          {facilities.length === 0 ? (
-            <div className="text-center py-8">
-              <Hospital className="mx-auto text-slate-400 mb-4" size={48} />
-              <p className="text-slate-600">No facilities found within {radiusKm} km</p>
-              <p className="text-sm text-slate-500 mt-2">Try expanding your search radius</p>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-slate-600 mb-4">
-                Found {facilities.length} facilities within {radiusKm} km
-              </p>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {facilities.map((facility, index) => (
-                  <div
-                    key={index}
-                    className="p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <MapPin className={`${getFacilityColor(facility.type)} shrink-0`} size={16} />
-                          <h4 className="font-semibold text-slate-800 text-sm">{facility.name}</h4>
-                        </div>
-                        <p className="text-xs text-slate-600 mb-1">
-                          Type: {facility.type} | Distance: {facility.distance_km} km
-                        </p>
-                        <p className="text-xs text-slate-500 mb-2">{facility.address}</p>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openInMaps(facility.latitude, facility.longitude, facility.name)}
-                          className="text-xs"
-                        >
-                          View on Map
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {userLocation && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800 mb-2">
-                <strong>Your Location:</strong> {userLocation.lat.toFixed(4)}, {userLocation.lon.toFixed(4)}
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openInMaps(userLocation.lat, userLocation.lon, "Your Location")}
-                className="text-xs"
-              >
-                View Your Location on Map
-              </Button>
-            </div>
-          )}
+      {error && (
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+          <AlertCircle className="mt-0.5 shrink-0 text-amber-700" size={18} aria-hidden="true" />
+          <p className="text-sm text-amber-900">{error}</p>
         </div>
       )}
+
+      <div aria-live="polite" aria-busy={isLoading}>
+        {isLoading && (
+          <ul className="space-y-3" aria-label="Loading facilities">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="glass-card h-24 animate-pulse bg-muted/60" />
+            ))}
+          </ul>
+        )}
+
+        {!hasSearched && !isLoading && (
+          <div className="glass-card">
+            <EmptyState
+              icon={Hospital}
+              title="Find care near you"
+              description="Search to see hospitals, clinics and pharmacies around your current location, sorted by distance."
+            />
+          </div>
+        )}
+
+        {hasSearched && !isLoading && (
+          <section aria-labelledby="facilities-heading">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 id="facilities-heading" className="font-semibold text-foreground">
+                {facilities.length > 0
+                  ? `${facilities.length} facilities within ${radiusKm} km`
+                  : "Nearby medical facilities"}
+              </h3>
+              {lastSearched && (
+                <p className="text-xs text-muted-foreground">
+                  Updated {lastSearched.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
+            </div>
+
+            {facilities.length === 0 ? (
+              <div className="glass-card">
+                <EmptyState
+                  icon={MapPin}
+                  title={`No facilities found within ${radiusKm} km`}
+                  description="Try searching again from a different location, or call 108 in an emergency."
+                />
+              </div>
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {facilities.map((facility, index) => {
+                  const style = getFacilityStyle(facility.type);
+                  const TypeIcon = style.icon;
+                  return (
+                    <li key={index} className="glass-card flex gap-4 p-4 transition-colors duration-200 hover:border-primary/40">
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${style.tint}`}>
+                        <TypeIcon size={20} aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold leading-snug text-foreground">{facility.name}</h4>
+                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-foreground">
+                            {facility.distance_km} km
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs font-medium capitalize text-muted-foreground">{facility.type}</p>
+                        {facility.address && (
+                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{facility.address}</p>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="link"
+                          onClick={() => openInMaps(facility.latitude, facility.longitude, facility.name)}
+                          className="mt-1 h-9 px-0"
+                        >
+                          Directions
+                          <ExternalLink aria-hidden="true" />
+                          <span className="sr-only">(opens Google Maps in a new tab)</span>
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {userLocation && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => openInMaps(userLocation.lat, userLocation.lon, "Your Location")}
+                className="mt-4 text-muted-foreground"
+              >
+                <MapPin aria-hidden="true" />
+                View your location on map
+              </Button>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 };

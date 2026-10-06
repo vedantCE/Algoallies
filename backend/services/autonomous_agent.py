@@ -5,7 +5,7 @@ import os
 import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import get_llm, is_llm_configured
 from langchain_core.messages import SystemMessage, HumanMessage
 from services.surge_prediction import surge_service
 from utils.weather_api import get_weather
@@ -19,12 +19,8 @@ class AutonomousAgentService:
     
     def __init__(self):
         self.model = None
-        if os.getenv("GOOGLE_API_KEY"):
-            self.model = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                api_key=os.getenv("GOOGLE_API_KEY"),
-                temperature=0.3
-            )
+        if is_llm_configured():
+            self.model = get_llm(temperature=0.3)
         
         self.last_analysis = None
         self.alert_thresholds = {

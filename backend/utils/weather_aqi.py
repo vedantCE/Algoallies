@@ -4,24 +4,17 @@ import requests
 import json
 from typing import Optional, Dict, Any
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from config.llm import get_llm, is_llm_configured
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    print("Warning: GOOGLE_API_KEY not found in .env - chatbot features disabled")
-    GOOGLE_API_KEY = None
-
 llm = None
-if GOOGLE_API_KEY:
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        api_key=GOOGLE_API_KEY,
-        temperature=0.3,
-    )
+if is_llm_configured():
+    llm = get_llm(temperature=0.3)
+else:
+    print("Warning: LLM API key not found in .env - chatbot features disabled")
 
 # --------- REUSE THE SAME HELPERS AS BEFORE ---------
 

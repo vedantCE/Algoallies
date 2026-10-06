@@ -3,14 +3,15 @@ import os
 import logging
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from utils.security import hash_password
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-# Mock data for fallback when MongoDB is unavailable
+# Mock data for fallback when MongoDB is unavailable (passwords stored as bcrypt hashes)
 MOCK_USERS = [
-    {"email": "citizen@test.com", "password": "1234", "role": "citizen"},
-    {"email": "hospital@test.com", "password": "9999", "role": "hospital"},
+    {"email": "citizen@test.com", "password": hash_password("1234"), "role": "citizen"},
+    {"email": "hospital@test.com", "password": hash_password("9999"), "role": "hospital"},
 ]
 
 MOCK_STAFF = [

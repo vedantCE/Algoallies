@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ExternalLink, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } }
 };
 
 const containerVariants = {
@@ -21,7 +22,7 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } }
 };
 
 const mentorVariants = {
@@ -31,17 +32,9 @@ const mentorVariants = {
     scale: 1, 
     transition: { 
       duration: 0.5, 
-      ease: "easeOut",
+      ease: "easeOut" as const,
       delay: 0.6
     } 
-  }
-};
-
-const hoverVariants = {
-  hover: { 
-    y: -2, 
-    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-    transition: { duration: 0.2 }
   }
 };
 
@@ -80,113 +73,94 @@ const mentor = {
   linkedin: "https://linkedin.com/in/emilyjohnson"
 };
 
+const initials = (name: string) => name.split(" ").map((n) => n[0]).join("");
+
 export const AboutUs = () => {
   const navigate = useNavigate();
 
   return (
-    <motion.div 
-      className="h-screen bg-white overflow-hidden"
+    <motion.div
+      className="min-h-dvh bg-background"
       variants={pageVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
-      <header className="px-4 sm:px-6 py-4 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-xl flex items-center justify-center">
-              <Activity className="text-white" size={24} />
-            </div>
-            <span className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              HealthAI
-            </span>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            Back to Home
+      <header className="sticky top-0 z-30 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between">
+          <Link to="/" aria-label="HealthAI home" className="rounded-lg">
+            <BrandLogo />
+          </Link>
+          <Button variant="outline" onClick={() => navigate("/")} className="h-11">
+            <ArrowLeft aria-hidden="true" />
+            <span className="hidden sm:inline">Back to home</span>
+            <span className="sm:hidden">Home</span>
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 sm:px-6 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Page Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">About the Team</h1>
-            <p className="text-base text-gray-600">
+      <main className="px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">Our team</p>
+            <h1 className="mb-3 text-3xl font-bold text-foreground sm:text-4xl">About the team</h1>
+            <p className="mx-auto max-w-xl text-lg text-muted-foreground">
               A student-led team building AI-assisted healthcare solutions.
             </p>
           </div>
 
           {/* Team Members */}
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+          <motion.ul
+            className="mb-16 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {teamMembers.map((member, index) => (
-              <motion.div
-                key={index}
-                variants={cardVariants}
-                whileHover="hover"
-                {...hoverVariants}
-                onClick={() => window.open(member.linkedin, '_blank')}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center cursor-pointer"
-              >
-                <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-gray-500">
-                    {member.name.split(' ').map(n => n[0]).join('')}
+            {teamMembers.map((member) => (
+              <motion.li key={member.name} variants={cardVariants}>
+                <a
+                  href={member.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass-card group flex flex-col items-center p-6 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                >
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full healthcare-gradient font-display text-lg font-semibold text-white shadow-sm">
+                    {initials(member.name)}
+                  </div>
+                  <h2 className="text-base font-semibold text-foreground">{member.name}</h2>
+                  <span className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                    LinkedIn
+                    <ExternalLink size={14} aria-hidden="true" />
+                    <span className="sr-only">(opens in a new tab)</span>
                   </span>
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-1">
-                  {member.name}
-                </h3>
-              </motion.div>
+                </a>
+              </motion.li>
             ))}
-          </motion.div>
+          </motion.ul>
 
           {/* Mentor Section */}
-          <div className="text-center">
-            <motion.h2 
-              className="text-xl font-bold text-gray-900 mb-4"
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.5 }}
-            >
-              Mentor & Guide
-            </motion.h2>
-            <motion.div 
+          <section className="text-center" aria-labelledby="mentor-heading">
+            <h2 id="mentor-heading" className="mb-5 text-xl font-bold text-foreground">Mentor &amp; guide</h2>
+            <motion.a
               variants={mentorVariants}
-              whileHover="hover"
-              {...hoverVariants}
               initial="hidden"
               animate="visible"
-              className="max-w-xs mx-auto bg-white rounded-lg shadow-md border-2 border-blue-200 p-4 text-center cursor-pointer"
-              onClick={() => window.open(mentor.linkedin, '_blank')}
+              href={mentor.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card mx-auto flex max-w-sm flex-col items-center border-primary/30 p-6 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
-                <span className="text-xl font-semibold text-gray-500">
-                  {mentor.name.split(' ').map(n => n[0]).join('')}
-                </span>
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-accent font-display text-xl font-semibold text-accent-foreground">
+                {initials(mentor.name)}
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-1">
-                {mentor.name}
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
+              <h3 className="text-lg font-semibold text-foreground">{mentor.name}</h3>
+              <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <GraduationCap size={16} aria-hidden="true" />
                 {mentor.role}
               </p>
-              <p className="text-xs text-gray-500 italic">
-                {mentor.description}
-              </p>
-            </motion.div>
-          </div>
+              <p className="mt-3 text-sm text-muted-foreground">{mentor.description}</p>
+            </motion.a>
+          </section>
         </div>
       </main>
     </motion.div>

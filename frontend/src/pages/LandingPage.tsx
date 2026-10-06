@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getLandingAI } from "@/lib/api";
 import {
@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const fadeUpVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -69,9 +70,7 @@ export const LandingPage = () => {
   useEffect(() => {
     const fetchLandingMessage = async () => {
       try {
-        console.log("Request sent to backend");
         const response = await getLandingAI();
-        console.log("Backend returned:", response.data);
         setLandingMessage(response.data.response);
       } catch (error) {
         console.error("Failed to fetch landing message:", error);
@@ -83,12 +82,15 @@ export const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden w-full">
-      {/* Floating Background Icons */}
+    <div className="relative min-h-dvh w-full overflow-x-hidden bg-background">
+      <a href="#main" className="skip-link">Skip to content</a>
+
+      {/* Decorative background icons (desktop only) */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-[900px] overflow-hidden md:block" aria-hidden="true">
       {floatingIcons.map(({ Icon, x, y, delay }, index) => (
         <motion.div
           key={index}
-          className="absolute text-primary/10 pointer-events-none"
+          className="absolute text-primary/[0.07]"
           style={{ left: x, top: y }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{
@@ -110,46 +112,32 @@ export const LandingPage = () => {
           <Icon size={60} />
         </motion.div>
       ))}
+      </div>
 
       {/* Header */}
-      <header className="relative z-10 px-4 sm:px-6 py-4 w-full">
-        <nav className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="w-10 h-10 healthcare-gradient rounded-xl flex items-center justify-center">
-              <Activity className="text-primary-foreground" size={24} />
-            </div>
-            <span className="font-bold text-2xl healthcare-gradient-text">HealthAI</span>
-          </motion.div>
+      <header className="sticky top-0 z-30 w-full border-b border-transparent bg-background/80 px-4 backdrop-blur-md sm:px-6">
+        <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center justify-between">
+          <Link to="/" aria-label="HealthAI home" className="rounded-lg">
+            <BrandLogo />
+          </Link>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/about")}
-              className="text-gray-600 hover:text-primary"
-            >
-              About Us
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" asChild className="h-11 text-muted-foreground hover:text-foreground">
+              <a href="#features">Features</a>
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/login")}
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Sign In
+            <Button variant="ghost" onClick={() => navigate("/about")} className="hidden h-11 text-muted-foreground hover:text-foreground sm:inline-flex">
+              About us
             </Button>
-          </motion.div>
+            <Button onClick={() => navigate("/login")} className="h-11 px-5">
+              Sign in
+            </Button>
+          </div>
         </nav>
       </header>
 
+      <main id="main">
       {/* Hero Section */}
-      <section className="relative z-10 px-4 sm:px-6 pt-20 pb-32 w-full">
+      <section className="relative z-10 w-full px-4 pb-24 pt-16 sm:px-6 sm:pt-24 md:pb-32">
         <div className="max-w-7xl mx-auto">
           <motion.div
             variants={staggerContainer}
@@ -169,7 +157,7 @@ export const LandingPage = () => {
 
             <motion.h1
               variants={fadeUpVariants}
-              className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
+              className="mb-6 text-4xl font-extrabold leading-[1.1] text-foreground sm:text-5xl md:text-7xl"
             >
               Your Health,{" "}
               <span className="healthcare-gradient-text">Reimagined</span>{" "}
@@ -178,7 +166,7 @@ export const LandingPage = () => {
 
             <motion.p
               variants={fadeUpVariants}
-              className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
+              className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl"
             >
               Experience the future of healthcare with intelligent consultations,
               real-time facility tracking, and personalized health insights.
@@ -191,18 +179,18 @@ export const LandingPage = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/login")}
-                className="healthcare-gradient text-primary-foreground px-8 py-6 text-lg group"
+                className="group h-14 px-8 text-base font-semibold shadow-md"
               >
-                Get Started
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                Get started
+                <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => navigate("/login")}
-                className="px-8 py-6 text-lg border-2"
+                asChild
+                className="h-14 px-8 text-base font-semibold"
               >
-                Watch Demo
+                <a href="#features">Explore features</a>
               </Button>
             </motion.div>
           </motion.div>
@@ -225,7 +213,7 @@ export const LandingPage = () => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
-                  className="text-3xl md:text-4xl font-bold healthcare-gradient-text"
+                  className="font-display text-3xl font-bold tabular-nums healthcare-gradient-text md:text-4xl"
                 >
                   {stat.value}
                 </motion.div>
@@ -237,7 +225,7 @@ export const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 px-4 sm:px-6 py-24 bg-muted/50 w-full">
+      <section id="features" className="relative z-10 w-full scroll-mt-16 bg-muted/50 px-4 py-20 sm:px-6 md:py-24">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -245,31 +233,30 @@ export const LandingPage = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-4">
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
               Everything You Need for{" "}
               <span className="healthcare-gradient-text">Better Health</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
               Comprehensive healthcare management powered by cutting-edge AI technology
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className="glass-card p-6 group cursor-pointer"
+                transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
+                className="glass-card p-6"
               >
-                <div className="w-14 h-14 rounded-2xl healthcare-gradient flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <feature.icon className="text-primary-foreground" size={28} />
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl healthcare-gradient shadow-sm">
+                  <feature.icon className="text-primary-foreground" size={24} aria-hidden="true" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+                <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
+                <p className="leading-relaxed text-muted-foreground">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -277,12 +264,12 @@ export const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="relative z-10 px-4 sm:px-6 py-24 w-full">
+      <section className="relative z-10 w-full px-4 py-20 sm:px-6 md:py-24">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="max-w-4xl mx-auto glass-card p-12 text-center relative overflow-hidden"
+          className="glass-card relative mx-auto max-w-4xl overflow-hidden p-8 text-center sm:p-12"
         >
           <div className="absolute inset-0 healthcare-gradient opacity-5" />
           <div className="relative z-10">
@@ -296,7 +283,7 @@ export const LandingPage = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/login")}
-                className="healthcare-gradient text-primary-foreground px-8"
+                className="h-14 px-8 text-base font-semibold shadow-md"
               >
                 Start Free Trial
               </Button>
@@ -305,7 +292,7 @@ export const LandingPage = () => {
               {["No credit card required", "14-day free trial", "Cancel anytime"].map(
                 (item, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <Check className="text-healthcare-green" size={16} />
+                    <Check className="text-success" size={16} aria-hidden="true" />
                     <span>{item}</span>
                   </div>
                 )
@@ -315,17 +302,19 @@ export const LandingPage = () => {
         </motion.div>
       </section>
 
+      </main>
+
       {/* Footer */}
-      <footer className="relative z-10 px-4 sm:px-6 py-12 border-t border-border w-full">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 healthcare-gradient rounded-lg flex items-center justify-center">
-              <Activity className="text-primary-foreground" size={18} />
-            </div>
-            <span className="font-bold healthcare-gradient-text">HealthAI</span>
-          </div>
+      <footer className="relative z-10 w-full border-t border-border px-4 py-10 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
+          <BrandLogo size="sm" />
+          <nav aria-label="Footer" className="flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#features" className="hover:text-foreground">Features</a>
+            <Link to="/about" className="hover:text-foreground">About us</Link>
+            <Link to="/login" className="hover:text-foreground">Sign in</Link>
+          </nav>
           <p className="text-sm text-muted-foreground">
-            © 2025 HealthAI. All rights reserved.
+            © {new Date().getFullYear()} HealthAI. All rights reserved.
           </p>
         </div>
       </footer>
